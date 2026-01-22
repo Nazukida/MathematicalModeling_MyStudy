@@ -379,7 +379,384 @@ class ParticleSwarmOptimization(BaseOptimizer):
 
 
 # ============================================================
-# 第五部分：遗传算法 (GA)
+# 第五部分：模拟退火算法 (SA)
+# ============================================================
+
+class SimulatedAnnealing(BaseOptimizer):
+    """
+    模拟退火算法 (Simulated Annealing)
+    
+    原理：
+    模拟金属退火过程，在高温时接受较差的解以跳出局部最优，
+    随着温度降低逐渐趋于稳定，最终收敛到全局最优解附近。
+    
+    核心机制：
+    - Metropolis准则：以概率 exp(-ΔE/T) 接受劣解
+    - 降温策略：T(k+1) = α * T(k)
+    
+    参数说明：
+    - T0: 初始温度，决定初始接受概率
+    - T_min: 终止温度，算法终止条件
+    - alpha: 降温系数，控制降温速度
+    - max_iter_per_temp: 每个温度下的迭代次数
+    """
+    
+    def __init__(self, objective_func, bounds, n_dims,
+                 initial_temp=100.0, min_temp=1e-8, cooling_rate=0.95,
+                 max_iter=1000, max_iter_per_temp=10,
+                 step_size=None, adaptive_step=True,
+                 random_seed=42, verbose=True):
+        """
+        参数配置说明
+        
+        核心参数：
+        :param initial_temp: 初始温度
+            - 建议：使初始接受概率约为0.8
+            - 经验公式：T0 ≈ -Δf_avg / ln(0.8)
+            
+        :param min_temp: 最低温度（终止条件）
+            - 建议：1e-8 ~ 1e-6
+            
+        :param cooling_rate: 降温系数 (α)
+            - 范围：0.9 ~ 0.99
+            - 小α：降温快，可能错过最优
+            - 大α：降温慢，精度高但耗时
+            
+        :param max_iter_per_temp: 每个温度下的迭代次数
+            - 建议：10 ~ 100，与问题维度相关
+        
+        高级参数：
+        :param step_size: 扰动步长（None则自动计算）
+        :param adaptive_step: 是否自适应调整步长
+        """
+        super().__init__(objective_func, bounds, n_dims, max_iter, random_seed, verbose)
+        
+        self.initial_temp = initial_temp
+        self.min_temp = min_temp
+        self.cooling_rate = cooling_rate
+        self.max_iter_per_temp = max_iter_per_temp
+        self.adaptive_step = adaptive_step
+        
+        # 自动计算步长
+        if step_size is None:
+            self.step_size = (self.bounds[:, 1] - self.bounds[:, 0]) * 0.1
+        else:
+            self.step_size = np.full(n_dims, step_size) if np.isscalar(step_size) else np.array(step_size)
+        
+        # 当前状态
+        self.current_solution = None
+        self.current_fitness = float('inf')
+        self.temperature = initial_temp
+        
+        # 额外统计
+        self.stats['accepted_moves'] = 0
+        self.stats['rejected_moves'] = 0
+        self.stats['temperatures'] = []
+    
+    def _initialize(self):
+        """初始化解"""
+        self.current_solution = np.random.uniform(
+            self.bounds[:, 0], self.bounds[:, 1], self.n_dims
+        )
+        self.current_fitness = self._evaluate(self.current_solution)
+        
+        # 初始化最优解
+        self.best_solution = self.current_solution.copy()
+        self.best_fitness = self.current_fitness
+        self.temperature = self.initial_temp
+    
+    def _generate_neighbor(self):
+        """生成邻域解"""
+        neighbor = self.current_solution.copy()
+        
+        # 随机选择扰动方式
+        if np.random.rand() < 0.5:
+            # 单维度扰动
+            idx = np.random.randint(self.n_dims)
+            neighbor[idx] += np.random.uniform(-self.step_size[idx], self.step_size[idx])
+        else:
+            # 多维度扰动
+            perturbation = np.random.uniform(-self.step_size, self.step_size)
+            neighbor += perturbation * np.random.rand(self.n_dims)
+        
+        # 边界处理
+        neighbor = np.clip(neighbor, self.bounds[:, 0], self.bounds[:, 1])
+        
+        return neighbor
+    
+    def _metropolis_criterion(self, delta):
+        """Metropolis接受准则"""
+        if delta < 0:
+            return True  # 更优解，直接接受
+        else:
+            # 以概率 exp(-delta/T) 接受劣解
+            probability = np.exp(-delta / self.temperature)
+            return np.random.rand() < probability
+    
+    def optimize(self):
+        """执行SA优化"""
+        self.stats['start_time'] = time.time()
+        
+        self._initialize()
+        
+        if self.verbose:
+            print("\n" + "="*60)
+            print("🔥 模拟退火算法 (SA) 开始...")
+            print("="*60)
+            print(f"  初始温度: {self.initial_temp}")
+            print(f"  终止温度: {self.min_temp}")
+            print(f"  降温系数: {self.cooling_rate}")
+            print(f"  每温度迭代: {self.max_iter_per_temp}")
+            print("-"*60)
+        
+        iteration = 0
+        temp_iteration = 0
+        
+        while self.temperature > self.min_temp and iteration < self.max_iter:
+            for _ in range(self.max_iter_per_temp):
+                if iteration >= self.max_iter:
+                    break
+                
+                # 生成邻域解
+                neighbor = self._generate_neighbor()
+                neighbor_fitness = self._evaluate(neighbor)
+                
+                # 计算能量差
+                delta = neighbor_fitness - self.current_fitness
+                
+                # Metropolis准则判断
+                if self._metropolis_criterion(delta):
+                    self.current_solution = neighbor.copy()
+                    self.current_fitness = neighbor_fitness
+                    self.stats['accepted_moves'] += 1
+                    
+                    # 更新最优解
+                    if self.current_fitness < self.best_fitness:
+                        self.best_solution = self.current_solution.copy()
+                        self.best_fitness = self.current_fitness
+                else:
+                    self.stats['rejected_moves'] += 1
+                
+                iteration += 1
+            
+            # 记录历史
+            self._record_history(temp_iteration, self.best_fitness, self.current_fitness)
+            self.stats['temperatures'].append(self.temperature)
+            
+            # 自适应步长调整
+            if self.adaptive_step and temp_iteration > 0 and temp_iteration % 10 == 0:
+                accept_ratio = self.stats['accepted_moves'] / (
+                    self.stats['accepted_moves'] + self.stats['rejected_moves'] + 1e-10
+                )
+                if accept_ratio > 0.5:
+                    self.step_size *= 1.1  # 接受率高，增大步长
+                elif accept_ratio < 0.2:
+                    self.step_size *= 0.9  # 接受率低，减小步长
+                self.step_size = np.clip(self.step_size, 
+                                         (self.bounds[:, 1] - self.bounds[:, 0]) * 0.001,
+                                         (self.bounds[:, 1] - self.bounds[:, 0]) * 0.5)
+            
+            # 降温
+            self.temperature *= self.cooling_rate
+            temp_iteration += 1
+            
+            if self.verbose and temp_iteration % 20 == 0:
+                print(f"  Temp={self.temperature:.4e}: Best = {self.best_fitness:.6f}, "
+                      f"Current = {self.current_fitness:.6f}")
+        
+        self.stats['end_time'] = time.time()
+        
+        if self.verbose:
+            self._print_summary()
+        
+        return self.best_solution, self.best_fitness
+    
+    def _print_summary(self):
+        """打印结果摘要"""
+        elapsed = self.stats['end_time'] - self.stats['start_time']
+        total_moves = self.stats['accepted_moves'] + self.stats['rejected_moves']
+        accept_ratio = self.stats['accepted_moves'] / (total_moves + 1e-10) * 100
+        
+        print("\n" + "="*60)
+        print("📊 SA 优化完成")
+        print("="*60)
+        print(f"  最优解: {self.best_solution}")
+        print(f"  最优值: {self.best_fitness:.8f}")
+        print(f"  运行时间: {elapsed:.2f} 秒")
+        print(f"  函数评估次数: {self.stats['total_evaluations']}")
+        print(f"  接受率: {accept_ratio:.1f}% ({self.stats['accepted_moves']}/{total_moves})")
+        print(f"  最终温度: {self.temperature:.4e}")
+        print("="*60)
+
+
+# ============================================================
+# 第五部分(续)：模拟退火TSP版本 (SA-TSP)
+# ============================================================
+
+class SimulatedAnnealingTSP:
+    """
+    模拟退火算法 - TSP专用版本
+    
+    原理：
+    使用模拟退火求解旅行商问题，邻域操作采用
+    2-opt交换或随机插入等方式。
+    """
+    
+    def __init__(self, cities,
+                 initial_temp=1000.0, min_temp=1e-6, cooling_rate=0.995,
+                 max_iter_per_temp=100,
+                 random_seed=42, verbose=True):
+        """
+        :param cities: 城市坐标 (n_cities, 2)
+        :param initial_temp: 初始温度
+        :param min_temp: 终止温度
+        :param cooling_rate: 降温系数
+        :param max_iter_per_temp: 每温度迭代次数
+        """
+        self.cities = np.array(cities)
+        self.n_cities = len(cities)
+        self.initial_temp = initial_temp
+        self.min_temp = min_temp
+        self.cooling_rate = cooling_rate
+        self.max_iter_per_temp = max_iter_per_temp
+        self.random_seed = random_seed
+        self.verbose = verbose
+        
+        np.random.seed(random_seed)
+        
+        # 计算距离矩阵
+        self.distance_matrix = self._compute_distance_matrix()
+        
+        # 结果
+        self.best_path = None
+        self.best_distance = float('inf')
+        self.history = {
+            'best_distance': [],
+            'current_distance': [],
+            'temperature': [],
+            'iteration': []
+        }
+    
+    def _compute_distance_matrix(self):
+        """计算距离矩阵"""
+        n = self.n_cities
+        dist = np.zeros((n, n))
+        for i in range(n):
+            for j in range(n):
+                if i != j:
+                    dist[i, j] = np.linalg.norm(self.cities[i] - self.cities[j])
+        return dist
+    
+    def _calculate_distance(self, path):
+        """计算路径总距离"""
+        distance = 0
+        for i in range(len(path)):
+            distance += self.distance_matrix[path[i], path[(i+1) % len(path)]]
+        return distance
+    
+    def _generate_neighbor(self, path):
+        """生成邻域解 - 使用多种邻域操作"""
+        new_path = path.copy()
+        operation = np.random.choice(['2opt', 'insert', 'swap'])
+        
+        if operation == '2opt':
+            # 2-opt: 反转一段路径
+            i, j = sorted(np.random.choice(len(path), 2, replace=False))
+            new_path[i:j+1] = new_path[i:j+1][::-1]
+            
+        elif operation == 'insert':
+            # 插入操作: 将一个城市移到另一个位置
+            i = np.random.randint(len(path))
+            j = np.random.randint(len(path))
+            city = new_path.pop(i)
+            new_path.insert(j, city)
+            
+        else:  # swap
+            # 交换两个城市
+            i, j = np.random.choice(len(path), 2, replace=False)
+            new_path[i], new_path[j] = new_path[j], new_path[i]
+        
+        return new_path
+    
+    def optimize(self):
+        """执行SA-TSP优化"""
+        if self.verbose:
+            print("\n" + "="*60)
+            print("🔥 模拟退火算法-TSP (SA-TSP) 开始...")
+            print("="*60)
+            print(f"  城市数量: {self.n_cities}")
+            print(f"  初始温度: {self.initial_temp}")
+            print(f"  降温系数: {self.cooling_rate}")
+            print("-"*60)
+        
+        # 初始化：随机路径
+        current_path = list(range(self.n_cities))
+        np.random.shuffle(current_path)
+        current_distance = self._calculate_distance(current_path)
+        
+        self.best_path = current_path.copy()
+        self.best_distance = current_distance
+        
+        temperature = self.initial_temp
+        iteration = 0
+        
+        while temperature > self.min_temp:
+            for _ in range(self.max_iter_per_temp):
+                # 生成邻域解
+                new_path = self._generate_neighbor(current_path)
+                new_distance = self._calculate_distance(new_path)
+                
+                # 计算能量差
+                delta = new_distance - current_distance
+                
+                # Metropolis准则
+                if delta < 0 or np.random.rand() < np.exp(-delta / temperature):
+                    current_path = new_path
+                    current_distance = new_distance
+                    
+                    if current_distance < self.best_distance:
+                        self.best_path = current_path.copy()
+                        self.best_distance = current_distance
+            
+            # 记录历史
+            self.history['iteration'].append(iteration)
+            self.history['best_distance'].append(self.best_distance)
+            self.history['current_distance'].append(current_distance)
+            self.history['temperature'].append(temperature)
+            
+            # 降温
+            temperature *= self.cooling_rate
+            iteration += 1
+            
+            if self.verbose and iteration % 50 == 0:
+                print(f"  Iter {iteration:4d}: T={temperature:.2e}, "
+                      f"Best={self.best_distance:.2f}, Current={current_distance:.2f}")
+        
+        if self.verbose:
+            self._print_summary()
+        
+        return self.best_path, self.best_distance
+    
+    def _print_summary(self):
+        """打印结果摘要"""
+        print("\n" + "="*60)
+        print("📊 SA-TSP 优化完成")
+        print("="*60)
+        print(f"  最优路径: {[x+1 for x in self.best_path]}")
+        print(f"  最短距离: {self.best_distance:.4f}")
+        print("="*60)
+    
+    def get_results(self):
+        """获取结果"""
+        return {
+            'best_path': self.best_path,
+            'best_distance': self.best_distance,
+            'history': self.history
+        }
+
+
+# ============================================================
+# 第七部分：遗传算法 (GA)
 # ============================================================
 
 class GeneticAlgorithm(BaseOptimizer):
@@ -591,7 +968,7 @@ class GeneticAlgorithm(BaseOptimizer):
 
 
 # ============================================================
-# 第六部分：蚁群算法 (ACO) - TSP专用
+# 第八部分：蚁群算法 (ACO) - TSP专用
 # ============================================================
 
 class AntColonyOptimization:
@@ -787,7 +1164,7 @@ class AntColonyOptimization:
 
 
 # ============================================================
-# 第七部分：可视化模块 (Visualization)
+# 第九部分：可视化模块 (Visualization)
 # ============================================================
 
 class OptimizationVisualizer:
@@ -960,7 +1337,7 @@ class OptimizationVisualizer:
 
 
 # ============================================================
-# 第八部分：算法对比分析 (Algorithm Comparison)
+# 第十部分：算法对比分析 (Algorithm Comparison)
 # ============================================================
 
 class AlgorithmComparator:
@@ -1059,7 +1436,7 @@ class AlgorithmComparator:
 
 
 # ============================================================
-# 第九部分：主程序与完整示例 (Main Program)
+# 第十一部分：主程序与完整示例 (Main Program)
 # ============================================================
 
 if __name__ == "__main__":
@@ -1079,6 +1456,11 @@ if __name__ == "__main__":
     ║      │                                                           ║
     ║      ├─ 优点：收敛快，参数少，易实现                              ║
     ║      └─ 适用：函数优化、参数调优、神经网络训练                    ║
+    ║                                                                  ║
+    ║   [SA] 模拟退火 ──→ 全局优化问题                                 ║
+    ║      │                                                           ║
+    ║      ├─ 优点：可跳出局部最优，参数鲁棒性好                        ║
+    ║      └─ 适用：组合优化、路径规划、调度问题                        ║
     ║                                                                  ║
     ║   [GA] 遗传算法 ──→ 连续/离散优化问题                            ║
     ║      │                                                           ║
@@ -1125,10 +1507,40 @@ if __name__ == "__main__":
     )
     
     # ================================================================
-    # 示例2：GA求解Rosenbrock函数
+    # 示例2：SA求解Ackley函数
     # ================================================================
     print("\n" + "="*70)
-    print("📍 EXAMPLE 2: GA求解Rosenbrock函数")
+    print("📍 EXAMPLE 2: SA求解Ackley函数")
+    print("="*70)
+    
+    print("\n目标函数: Ackley函数（多峰复杂函数）")
+    print("理论最优: f(0,0) = 0\n")
+    
+    sa = SimulatedAnnealing(
+        objective_func=BenchmarkFunctions.ackley,
+        bounds=(-32.768, 32.768),
+        n_dims=2,
+        initial_temp=100.0,
+        min_temp=1e-8,
+        cooling_rate=0.95,
+        max_iter=2000,
+        max_iter_per_temp=20,
+        adaptive_step=True,
+        verbose=True
+    )
+    sa_solution, sa_fitness = sa.optimize()
+    
+    visualizer.plot_convergence(sa, title="SA收敛曲线 - Ackley函数")
+    visualizer.plot_function_landscape(
+        BenchmarkFunctions.ackley, (-5, 5), sa_solution,
+        title="Ackley函数与SA最优解"
+    )
+    
+    # ================================================================
+    # 示例3：GA求解Rosenbrock函数
+    # ================================================================
+    print("\n" + "="*70)
+    print("📍 EXAMPLE 3: GA求解Rosenbrock函数")
     print("="*70)
     
     print("\n目标函数: f(x) = Σ[100(x_{i+1}-x_i²)² + (1-x_i)²]")
@@ -1152,10 +1564,10 @@ if __name__ == "__main__":
     visualizer.plot_convergence(ga, title="GA收敛曲线 - Rosenbrock函数")
     
     # ================================================================
-    # 示例3：ACO求解TSP问题
+    # 示例4：ACO求解TSP问题
     # ================================================================
     print("\n" + "="*70)
-    print("📍 EXAMPLE 3: ACO求解TSP问题")
+    print("📍 EXAMPLE 4: ACO求解TSP问题")
     print("="*70)
     
     # 生成随机城市
@@ -1173,34 +1585,44 @@ if __name__ == "__main__":
         alpha=1.0, beta=3.0, rho=0.4, Q=100,
         verbose=True
     )
-    best_path, best_distance = aco.optimize()
+    aco_path, aco_distance = aco.optimize()
     
-    visualizer.plot_tsp_solution(cities, best_path, 
-                                 title=f"ACO-TSP最优路径 (距离: {best_distance:.2f})")
+    visualizer.plot_tsp_solution(cities, aco_path, 
+                                 title=f"ACO-TSP最优路径 (距离: {aco_distance:.2f})")
     visualizer.plot_convergence(aco, title="ACO收敛曲线 - TSP问题")
     
     # ================================================================
-    # 示例4：算法对比
+    # 示例5：SA-TSP求解TSP问题（与ACO对比）
     # ================================================================
     print("\n" + "="*70)
-    print("📍 EXAMPLE 4: PSO vs GA 算法对比")
+    print("📍 EXAMPLE 5: SA-TSP求解TSP问题")
     print("="*70)
     
-    # 对比PSO和GA
-    comparator = AlgorithmComparator(random_seed=2026)
-    comparator.compare_on_function(
-        func=BenchmarkFunctions.rastrigin,
-        bounds=(-5.12, 5.12),
-        n_dims=2,
-        n_trials=10,
-        max_iter=100
+    sa_tsp = SimulatedAnnealingTSP(
+        cities=cities,
+        initial_temp=1000.0,
+        min_temp=1e-6,
+        cooling_rate=0.995,
+        max_iter_per_temp=50,
+        verbose=True
     )
-    comparator.statistical_summary()
-    comparator.plot_boxplot()
+    sa_tsp_path, sa_tsp_distance = sa_tsp.optimize()
     
-    # 可视化对比
-    visualizer.plot_comparison({'PSO': pso, 'GA': ga}, 
-                               title="PSO vs GA 收敛曲线对比")
+    visualizer.plot_tsp_solution(cities, sa_tsp_path,
+                                 title=f"SA-TSP最优路径 (距离: {sa_tsp_distance:.2f})")
+    
+    print(f"\n📊 TSP算法对比: ACO={aco_distance:.2f} vs SA={sa_tsp_distance:.2f}")
+    
+    # ================================================================
+    # 示例6：四种算法综合对比
+    # ================================================================
+    print("\n" + "="*70)
+    print("📍 EXAMPLE 6: PSO vs SA vs GA 算法对比")
+    print("="*70)
+    
+    # 可视化对比（连续优化算法）
+    visualizer.plot_comparison({'PSO': pso, 'SA': sa, 'GA': ga}, 
+                               title="PSO vs SA vs GA 收敛曲线对比")
     
     # ================================================================
     # 使用说明
@@ -1220,15 +1642,25 @@ if __name__ == "__main__":
        ├─ 优点: 收敛快、参数少、易实现
        └─ 参数: w=0.7, c1=c2=2.0（默认即可）
     
-    2️⃣ GA（遗传算法）
+    2️⃣ SA（模拟退火）
+       ├─ 适用: 全局优化、组合优化、跳出局部最优
+       ├─ 优点: 理论保证收敛、参数鲁棒性好
+       └─ 参数: T0=100, α=0.95, 自适应步长
+    
+    3️⃣ GA（遗传算法）
        ├─ 适用: 离散/连续优化、组合优化
        ├─ 优点: 全局搜索能力强、鲁棒性好
        └─ 参数: Pc=0.8, Pm=0.1, 锦标赛选择
     
-    3️⃣ ACO（蚁群算法）
+    4️⃣ ACO（蚁群算法）
        ├─ 适用: TSP、VRP等路径问题
        ├─ 优点: 正反馈、分布式、并行性好
        └─ 参数: α=1, β=2-5, ρ=0.1-0.5
+    
+    5️⃣ SA-TSP（模拟退火TSP版）
+       ├─ 适用: 旅行商问题、路径优化
+       ├─ 优点: 2-opt邻域、多种扰动策略
+       └─ 参数: T0=1000, α=0.995
     
     【自定义目标函数】
     
@@ -1236,10 +1668,20 @@ if __name__ == "__main__":
         # x是numpy数组
         return x[0]**2 + x[1]**2  # 返回标量
     
+    # PSO示例
     optimizer = ParticleSwarmOptimization(
         objective_func=my_objective,
         bounds=(-10, 10),
         n_dims=2
+    )
+    
+    # SA示例
+    optimizer = SimulatedAnnealing(
+        objective_func=my_objective,
+        bounds=(-10, 10),
+        n_dims=2,
+        initial_temp=100.0,
+        cooling_rate=0.95
     )
     
     【论文图表建议】
@@ -1247,12 +1689,12 @@ if __name__ == "__main__":
     Figure 1: 问题描述（函数landscape/城市分布）
     Figure 2: 收敛曲线
     Figure 3: 最优解可视化
-    Figure 4: 算法对比（箱线图）
+    Figure 4: 算法对比（箱线图/收敛曲线）
     Figure 5: 参数敏感性分析
     
     Table 1: 算法参数设置
     Table 2: 多次运行统计结果（Mean±Std）
-    Table 3: 与其他方法对比
+    Table 3: 与其他方法对比（PSO/SA/GA/ACO）
     """)
     
     print("\n" + "="*70)

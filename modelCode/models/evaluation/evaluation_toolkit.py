@@ -337,6 +337,223 @@ class EntropyWeightMethod:
 
 
 # ============================================================
+# 第三部分B：CRITIC法核心算法 (CRITIC Method)
+# ============================================================
+
+class CRITICMethod:
+    """
+    CRITIC法 - 客观赋权方法
+    (Criteria Importance Through Intercriteria Correlation)
+    
+    原理：
+    综合考虑两个维度确定权重：
+    1. 对比强度（Contrast Intensity）：用标准差衡量，标准差越大，变异程度越高
+    2. 冲突性（Conflicting）：用相关系数衡量，与其他指标相关性越低，冲突性越大
+    
+    优势：
+    - 同时考虑数据变异性和指标间相关性
+    - 对冗余指标的权重会自动降低
+    - 适用于指标间存在较强相关性的情况
+    
+    步骤：
+    1. 数据标准化
+    2. 计算各指标标准差（对比强度）
+    3. 计算指标间相关系数矩阵
+    4. 计算信息量 = 标准差 × Σ(1-相关系数)
+    5. 归一化得到权重
+    """
+    
+    def __init__(self, verbose=True):
+        """
+        初始化CRITIC法
+        :param verbose: 是否打印详细信息
+        """
+        self.verbose = verbose
+        self.data = None
+        self.data_normalized = None
+        self.std = None  # 标准差
+        self.correlation_matrix = None  # 相关系数矩阵
+        self.conflict = None  # 冲突性
+        self.information = None  # 信息量
+        self.weights = None
+        self.indicator_names = None
+        
+    def fit(self, data, negative_indices=None, indicator_types=None):
+        """
+        计算指标权重
+        
+        :param data: DataFrame或numpy数组，行为对象，列为指标
+        :param negative_indices: 负向指标的列索引列表（从0开始）
+        :param indicator_types: 指标类型列表 ['positive', 'negative', ...]
+        :return: self
+        """
+        # 数据转换
+        if isinstance(data, pd.DataFrame):
+            self.data = data.values.astype(float)
+            self.indicator_names = list(data.columns)
+        else:
+            self.data = data.astype(float)
+            self.indicator_names = [f"指标{i+1}" for i in range(data.shape[1])]
+        
+        # 确定负向指标
+        if indicator_types is not None:
+            negative_indices = [i for i, t in enumerate(indicator_types) if t == 'negative']
+        elif negative_indices is None:
+            negative_indices = []
+        
+        n, m = self.data.shape  # n=对象数，m=指标数
+        
+        # Step 1: 极差标准化
+        data_min = self.data.min(axis=0)
+        data_max = self.data.max(axis=0)
+        self.data_normalized = (self.data - data_min) / (data_max - data_min + 1e-10)
+        
+        # Step 2: 负向指标转正向
+        for idx in negative_indices:
+            self.data_normalized[:, idx] = 1 - self.data_normalized[:, idx]
+        
+        # Step 3: 计算标准差（对比强度）
+        self.std = np.std(self.data_normalized, axis=0, ddof=1)
+        
+        # Step 4: 计算相关系数矩阵
+        self.correlation_matrix = np.corrcoef(self.data_normalized.T)
+        # 处理可能的NaN值（当某列全为相同值时）
+        self.correlation_matrix = np.nan_to_num(self.correlation_matrix, nan=1.0)
+        
+        # Step 5: 计算冲突性（与其他指标的相关性越低，冲突性越大）
+        self.conflict = np.sum(1 - self.correlation_matrix, axis=1)
+        
+        # Step 6: 计算信息量
+        self.information = self.std * self.conflict
+        
+        # Step 7: 计算权重
+        self.weights = self.information / self.information.sum()
+        
+        if self.verbose:
+            self._print_results()
+        
+        return self
+    
+    def _print_results(self):
+        """打印结果"""
+        print("\n" + "="*70)
+        print("📊 CRITIC法计算结果 (CRITIC Method Results)")
+        print("="*70)
+        
+        results = pd.DataFrame({
+            '指标': self.indicator_names,
+            '标准差(对比强度)': self.std,
+            '冲突性': self.conflict,
+            '信息量': self.information,
+            '权重': self.weights
+        })
+        print(results.round(4).to_string(index=False))
+        print(f"\n权重总和验证: {self.weights.sum():.4f}")
+        
+        # 打印相关系数矩阵
+        print("\n相关系数矩阵:")
+        corr_df = pd.DataFrame(
+            self.correlation_matrix, 
+            index=self.indicator_names, 
+            columns=self.indicator_names
+        )
+        print(corr_df.round(3))
+        print("="*70)
+    
+    def get_weights(self):
+        """返回权重"""
+        return pd.Series(self.weights, index=self.indicator_names)
+    
+    def get_correlation_matrix(self):
+        """返回相关系数矩阵"""
+        return pd.DataFrame(
+            self.correlation_matrix,
+            index=self.indicator_names,
+            columns=self.indicator_names
+        )
+    
+    def transform(self, data=None):
+        """
+        使用CRITIC法权重计算综合得分
+        """
+        if data is None:
+            data = self.data_normalized
+        elif isinstance(data, pd.DataFrame):
+            data = data.values
+        
+        scores = (data * self.weights).sum(axis=1)
+        return scores
+    
+    def plot_analysis(self, figsize=(16, 5), save_path=None):
+        """
+        可视化CRITIC法分析结果
+        
+        :param figsize: 图形大小
+        :param save_path: 保存路径
+        """
+        fig, axes = plt.subplots(1, 3, figsize=figsize)
+        
+        colors = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#6B4C9A', '#1B998B']
+        
+        # 子图1: 权重分布
+        ax1 = axes[0]
+        bars = ax1.bar(self.indicator_names, self.weights, 
+                       color=colors[:len(self.indicator_names)], 
+                       edgecolor='white', linewidth=2)
+        ax1.set_xlabel('指标 (Indicator)', fontweight='bold')
+        ax1.set_ylabel('权重 (Weight)', fontweight='bold')
+        ax1.set_title('(a) CRITIC法权重分布', fontsize=12, fontweight='bold')
+        ax1.set_ylim(0, max(self.weights) * 1.3)
+        for bar, w in zip(bars, self.weights):
+            ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
+                    f'{w:.3f}', ha='center', va='bottom', fontsize=10)
+        ax1.tick_params(axis='x', rotation=15)
+        
+        # 子图2: 对比强度与冲突性
+        ax2 = axes[1]
+        x = np.arange(len(self.indicator_names))
+        width = 0.35
+        bars1 = ax2.bar(x - width/2, self.std / self.std.max(), width, 
+                       label='对比强度(标准化)', color='#2E86AB', edgecolor='white')
+        bars2 = ax2.bar(x + width/2, self.conflict / self.conflict.max(), width,
+                       label='冲突性(标准化)', color='#A23B72', edgecolor='white')
+        ax2.set_xlabel('指标 (Indicator)', fontweight='bold')
+        ax2.set_ylabel('标准化值', fontweight='bold')
+        ax2.set_title('(b) 对比强度与冲突性分析', fontsize=12, fontweight='bold')
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(self.indicator_names, rotation=15)
+        ax2.legend()
+        
+        # 子图3: 相关系数热力图
+        ax3 = axes[2]
+        im = ax3.imshow(self.correlation_matrix, cmap='coolwarm', 
+                       aspect='auto', vmin=-1, vmax=1)
+        ax3.set_xticks(np.arange(len(self.indicator_names)))
+        ax3.set_yticks(np.arange(len(self.indicator_names)))
+        ax3.set_xticklabels(self.indicator_names, rotation=45, ha='right')
+        ax3.set_yticklabels(self.indicator_names)
+        ax3.set_title('(c) 指标相关系数矩阵', fontsize=12, fontweight='bold')
+        
+        # 添加数值标注
+        for i in range(len(self.indicator_names)):
+            for j in range(len(self.indicator_names)):
+                text = ax3.text(j, i, f'{self.correlation_matrix[i, j]:.2f}',
+                               ha='center', va='center', fontsize=9,
+                               color='white' if abs(self.correlation_matrix[i, j]) > 0.5 else 'black')
+        
+        plt.colorbar(im, ax=ax3, shrink=0.8)
+        
+        plt.suptitle('CRITIC法分析报告', fontsize=14, fontweight='bold', y=1.02)
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()
+        
+        return fig
+
+
+# ============================================================
 # 第四部分：TOPSIS法核心算法 (TOPSIS Method)
 # ============================================================
 
