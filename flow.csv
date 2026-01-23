@@ -1,0 +1,61 @@
+origin,origin_lon,origin_lat,dest,dest_lon,dest_lat,value
+China,104.2,35.8,United States,-98.5,39.8,2500
+China,104.2,35.8,Japan,138.2,36.2,1800
+China,104.2,35.8,Germany,10.4,51.2,1200
+China,104.2,35.8,United Kingdom,-1.2,52.5,950
+China,104.2,35.8,Australia,133.8,-25.3,800
+China,104.2,35.8,Brazil,-51.9,-14.2,650
+China,104.2,35.8,Russia,105.3,61.5,1100
+China,104.2,35.8,India,78.9,20.6,900
+China,104.2,35.8,South Korea,127.8,35.9,1400
+China,104.2,35.8,Canada,-106.3,56.1,700
+United States,-98.5,39.8,Germany,10.4,51.2,1600
+United States,-98.5,39.8,United Kingdom,-1.2,52.5,1400
+United States,-98.5,39.8,Japan,138.2,36.2,1100
+United States,-98.5,39.8,Mexico,-102.5,23.6,1800
+United States,-98.5,39.8,Brazil,-51.9,-14.2,750
+United States,-98.5,39.8,France,2.2,46.2,850
+United States,-98.5,39.8,Australia,133.8,-25.3,600
+United States,-98.5,39.8,India,78.9,20.6,500
+United States,-98.5,39.8,South Korea,127.8,35.9,720
+Germany,10.4,51.2,France,2.2,46.2,1300
+Germany,10.4,51.2,Italy,12.5,41.9,1100
+Germany,10.4,51.2,Spain,-3.7,40.4,800
+Germany,10.4,51.2,Poland,19.1,51.9,950
+Germany,10.4,51.2,Netherlands,5.3,52.1,1050
+Germany,10.4,51.2,Russia,105.3,61.5,600
+Japan,138.2,36.2,South Korea,127.8,35.9,1200
+Japan,138.2,36.2,Taiwan,120.9,23.7,900
+Japan,138.2,36.2,Thailand,100.5,15.9,550
+Japan,138.2,36.2,Vietnam,108.3,14.1,480
+Japan,138.2,36.2,Australia,133.8,-25.3,650
+Brazil,-51.9,-14.2,Argentina,-63.6,-38.4,900
+Brazil,-51.9,-14.2,Chile,-71.5,-35.7,500
+Brazil,-51.9,-14.2,Colombia,-74.3,4.6,450
+Brazil,-51.9,-14.2,South Africa,22.9,-30.6,350
+Russia,105.3,61.5,Kazakhstan,66.9,48.0,700
+Russia,105.3,61.5,Turkey,35.2,39.0,550
+Russia,105.3,61.5,Iran,53.7,32.4,400
+India,78.9,20.6,UAE,54.0,23.4,850
+India,78.9,20.6,Saudi Arabia,45.1,23.9,600
+India,78.9,20.6,Singapore,103.8,1.4,720
+India,78.9,20.6,Bangladesh,90.4,23.7,450
+Australia,133.8,-25.3,New Zealand,174.9,-40.9,550
+Australia,133.8,-25.3,Indonesia,113.9,-0.8,480
+Australia,133.8,-25.3,Singapore,103.8,1.4,600
+South Africa,22.9,-30.6,Nigeria,8.7,9.1,380
+South Africa,22.9,-30.6,Kenya,37.9,-0.02,320
+South Africa,22.9,-30.6,Egypt,30.8,26.8,290
+UAE,54.0,23.4,Saudi Arabia,45.1,23.9,750
+UAE,54.0,23.4,Iran,53.7,32.4,400
+Singapore,103.8,1.4,Malaysia,101.9,4.2,680
+Singapore,103.8,1.4,Indonesia,113.9,-0.8,720
+Singapore,103.8,1.4,Thailand,100.5,15.9,550
+Mexico,-102.5,23.6,Colombia,-74.3,4.6,420
+Mexico,-102.5,23.6,Guatemala,-90.2,15.8,350
+Canada,-106.3,56.1,United Kingdom,-1.2,52.5,480
+France,2.2,46.2,Morocco,-7.1,31.8,450
+France,2.2,46.2,Algeria,1.7,28.0,380
+Italy,12.5,41.9,Egypt,30.8,26.8,320
+Turkey,35.2,39.0,Iraq,43.7,33.2,280
+Turkey,35.2,39.0,Syria,38.9,34.8,200
