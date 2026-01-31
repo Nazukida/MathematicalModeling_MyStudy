@@ -1,0 +1,4 @@
+career=software_engineer
+school=CMU
+target_year_used=2030
+F_t=445.2927494090085

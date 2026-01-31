@@ -121,7 +121,7 @@ class AICareerParams:
             'D2': 0.8,   # 快技能演进
             'D3': 0.15,   # 高市场需求弹性
             'D4': 0.28,   # 低人本约束
-            'A': 2.3,    # 高AI增强系数
+            'A': 1.3,    # 高AI增强系数
             'cost_reduction': 0.41  # 成本降低幅度（示例值，表示15%）
         },
         'chef': {
@@ -129,7 +129,7 @@ class AICareerParams:
             'D2': 0.1,   # 慢技能演进
             'D3': 0.07,   # 中等市场需求弹性
             'D4': 0.45,   # 高人本约束（物理操作）
-            'A': 1.1,    # 中等AI增强系数
+            'A': 0.5,    # 中等AI增强系数
             'cost_reduction': 0.05  # 成本降低幅度（示例值，表示5%）
         },
         'graphic_designer': {
@@ -137,8 +137,8 @@ class AICareerParams:
             'D2': 0.4,   # 中等技能演进
             'D3': 0.02,   # 高市场需求弹性（创意产业）
             'D4': 0.29,   # 低人本约束
-            'A': 1.8,    # 高AI增强系数（设计工具）
-            'cost_reduction': 0.90  # 成本降低幅度（示例值，表示10%）
+            'A': 0.6,    # 高AI增强系数（设计工具）
+            'cost_reduction': 0.10  # 成本降低幅度（示例值，表示10%）
         }
     }
 
@@ -428,7 +428,7 @@ class AICareerModel:
         p = self.params
 
         # 人类核心防御区
-        defense = (1 - P_t) * (1 - p.D4)
+        defense = 1 - P_t * (1 - p.D4)
 
         # AI增强产出
         enhancement = P_t * p.A
@@ -772,7 +772,7 @@ class AICareerVisualization:
         # 子图4: 最终需求 vs 基准预测
         ax4 = axes[1, 1]
         ax4.plot(r['future_years'], r['baseline_predictions'],
-                '--', color=colors[1], label='Baseline Prediction', linewidth=2)
+                '--', color="#0033FF", label='Baseline Prediction', linewidth=2)
         ax4.plot(r['future_years'], r['final_demands'],
                 '*-', color=colors[6], label='Final Demand', linewidth=3, markersize=8)
         ax4.fill_between(r['future_years'], r['baseline_predictions'], r['final_demands'],
@@ -886,62 +886,37 @@ class AICareerVisualization:
         """
         绘制阶段分析图
         """
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+        # 简洁阶段分析：左图展示AI渗透率与就业增长率，右图展示最终需求与基准预测对比
+        fig, (ax_left, ax_right) = plt.subplots(1, 2, figsize=figsize)
         occupation_english = self.model.params.occupation_name
-        fig.suptitle(f'{occupation_english} - AI Impact Phase Analysis',
-                    fontsize=16, fontweight='bold')
-        fig.text(0.5, 0.95, 'Evolution of AI Impact Over Time',
-                ha='center', fontsize=12, style='italic')
+        fig.suptitle(f'{occupation_english} - AI Impact Phase Analysis', fontsize=16, fontweight='bold')
+        fig.text(0.5, 0.95, 'Evolution of AI Impact Over Time', ha='center', fontsize=12, style='italic')
 
         r = self.results
         colors = PlotStyleConfig.get_palette()
 
-        # 左图: 渗透率和增长率
-        ax1_twin = ax1.twinx()
-        line1 = ax1.plot(r['future_years'], r['penetration_rates'] * 100,
-                        's-', color=colors[2], label='AI Penetration Rate (%)', linewidth=2.5, markersize=6)
-        line2 = ax1_twin.plot(r['future_years'], np.gradient(r['final_demands']) / r['final_demands'] * 100,
-                             'D-', color=colors[6], label='Employment Growth Rate (%)', linewidth=2, markersize=6)
-        ax1.set_xlabel('Year')
-        ax1.set_ylabel('AI Penetration Rate (%)', color=colors[2])
-        ax1_twin.set_ylabel('Employment Growth Rate (%)', color=colors[6])
-        ax1.set_title('AI Penetration vs Employment Growth', fontweight='bold', fontsize=14)
-        ax1.grid(True, alpha=0.3)
+        # 左图: 渗透率与增长率
+        ax_left.plot(r['future_years'], r['penetration_rates'] * 100, 's-', color=colors[2], label='AI Penetration (%)', linewidth=2.5)
+        ax_left.set_ylabel('AI Penetration (%)', color=colors[2])
+        ax_left.set_xlabel('Year')
+        ax_left_twin = ax_left.twinx()
+        growth = np.gradient(r['final_demands']) / (r['final_demands'] + 1e-9) * 100
+        ax_left_twin.plot(r['future_years'], growth, 'D--', color=colors[6], label='Employment Growth Rate (%)', linewidth=2)
+        ax_left_twin.set_ylabel('Employment Growth Rate (%)', color=colors[6])
+        ax_left.set_title('AI Penetration vs Employment Growth', fontweight='bold')
+        ax_left.grid(True, alpha=0.3)
 
-        # 合并图例
-        lines = line1 + line2
-        labels = [l.get_label() for l in lines]
-        ax1.legend(lines, labels, loc='upper left')
-
-        # 右图: 阶段划分
-        phases = []
-        for i, year in enumerate(r['future_years']):
-            if r['penetration_rates'][i] < 0.2:
-                phases.append('Early Adoption')
-            elif r['penetration_rates'][i] < 0.6:
-                phases.append('Growth Phase')
-            else:
-                phases.append('Maturity Phase')
-
-        unique_phases = list(set(phases))
-        phase_colors = {phase: colors[i] for i, phase in enumerate(unique_phases)}
-
-        for i, (year, phase) in enumerate(zip(r['future_years'], phases)):
-            ax2.bar(year, r['final_demands'][i], color=phase_colors[phase], alpha=0.7, width=0.8)
-
-        # 添加阶段图例
-        legend_elements = [plt.Rectangle((0,0),1,1, facecolor=phase_colors[phase], alpha=0.7)
-                          for phase in unique_phases]
-        ax2.legend(legend_elements, unique_phases, loc='upper left')
-
-        ax2.set_xlabel('Year')
-        ax2.set_ylabel('Employment (10,000 people)')
-        ax2.set_title('Employment by AI Adoption Phase', fontweight='bold', fontsize=14)
-        ax2.grid(True, alpha=0.3)
+        # 右图: 基准预测 vs 最终需求
+        ax_right.plot(r['future_years'], r['baseline_predictions'], '--', color=colors[1], label='Baseline Prediction', linewidth=2)
+        ax_right.plot(r['future_years'], r['final_demands'], '*-', color=colors[6], label='Final Demand (with AI)', linewidth=2)
+        ax_right.set_title('Baseline vs Final Demand', fontweight='bold')
+        ax_right.set_xlabel('Year')
+        ax_right.set_ylabel('Employment (10,000 people)')
+        ax_right.legend()
+        ax_right.grid(True, alpha=0.3)
 
         plt.tight_layout(rect=[0, 0, 1, 0.93])
 
-        # 保存图片
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_phase_analysis"
         paths = self.saver.save(fig, career_filename)
         print(f"  💾 Phase analysis plot saved: {paths[0]}")
@@ -949,56 +924,73 @@ class AICareerVisualization:
         return fig
 
     def plot_dimension_radar(self, figsize=(10, 10)):
-        """
-        绘制维度雷达图
-        """
+        """替代实现：等距彩色环围绕雷达主体，雷达主体缩小"""
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111, polar=True)
 
         occupation_english = self.model.params.occupation_name
-        fig.suptitle(f'{occupation_english} - Dimension Profile Radar',
-                    fontsize=16, fontweight='bold')
-        fig.text(0.5, 0.95, 'Four Key Dimensions Analysis',
-                ha='center', fontsize=12, style='italic')
+        fig.suptitle(f'{occupation_english} - Dimension Profile Radar', fontsize=16, fontweight='bold')
+        fig.text(0.5, 0.95, 'Four Key Dimensions Analysis', ha='center', fontsize=12, style='italic')
 
-        # 维度数据
         categories = ['Automation\nPotential (D1)', 'Skill\nEvolution (D2)',
-                     'Market\nElasticity (D3)', 'Human\nConstraints (D4)']
-        values = [self.model.params.D1, self.model.params.D2,
-                 self.model.params.D3, self.model.params.D4]
+                      'Market\nElasticity (D3)', 'Human\nConstraints (D4)']
+        raw_values = [self.model.params.D1, self.model.params.D2, self.model.params.D3, self.model.params.D4]
 
-        # 闭合数据
-        values += values[:1]
-        angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
-        angles += angles[:1]
+        # 极坐标角度设置
+        n = len(categories)
+        angles = np.linspace(0, 2 * np.pi, n, endpoint=False).tolist()
 
-        # 绘制雷达图
-        ax.plot(angles, values, 'o-', linewidth=2, label=occupation_english, color=PlotStyleConfig.COLORS['primary'])
-        ax.fill(angles, values, alpha=0.25, color=PlotStyleConfig.COLORS['primary'])
+        # 为了闭合雷达线
+        plot_angles = angles + angles[:1]
 
-        # 设置标签
-        ax.set_xticks(angles[:-1])
+        # 颜色设置
+        dimension_colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
+
+        # 缩放雷达主体 (假设原始数据是 0-1)
+        max_radar_radius = 0.6
+        scaled_values = [v * max_radar_radius for v in raw_values]
+        plot_values = scaled_values + scaled_values[:1]
+
+        # --- 核心修改：绘制外环 ---
+        ring_bottom = max_radar_radius * 1.1  # 环的内径
+        ring_height = 0.2                     # 环的厚度
+
+        # 使用 bar 绘制色块环
+        bars = ax.bar(angles, [ring_height] * n, width=2 * np.pi / n, bottom=ring_bottom,
+                      color=dimension_colors, alpha=0.8, edgecolor='none', zorder=1)
+
+        # --- 绘制雷达主体 ---
+        primary_color = '#2C3E50'
+        ax.plot(plot_angles, plot_values, 'o-', linewidth=3, color=primary_color, markersize=7, zorder=4)
+        ax.fill(plot_angles, plot_values, alpha=0.22, color=primary_color, zorder=3)
+
+        # --- 标签与刻度 ---
+        ax.set_xticks(angles)
         ax.set_xticklabels(categories, fontsize=12, fontweight='bold')
-        ax.set_ylim(0, 1)
-        ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-        ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=10)
-        ax.grid(True, alpha=0.3)
 
-        # 添加数值标签
-        for i, (angle, value) in enumerate(zip(angles[:-1], values[:-1])):
-            ax.text(angle, value + 0.05, f'{value:.2f}', ha='center', va='bottom', fontsize=10, fontweight='bold')
+        # 设置显示范围，留出外环空间
+        ax.set_ylim(0, ring_bottom + ring_height + 0.1)
 
-        ax.legend(loc='upper right', bbox_to_anchor=(1.2, 1.1))
+        # 设置刻度（仅显示在雷达主体内）
+        yticks = [0.2 * max_radar_radius, 0.4 * max_radar_radius, 0.6 * max_radar_radius]
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(['0.2', '0.4', '0.6'], fontsize=10, color='#2C3E50', fontweight='bold')
+
+        # 修饰网格
+        ax.grid(True, color='#2C3E50', alpha=0.3, linewidth=1.2)
+
+        # --- 数值标签 ---
+        for i, (angle, val) in enumerate(zip(angles, scaled_values)):
+            ax.text(angle, val + 0.04, f'{raw_values[i]:.2f}', ha='center', va='bottom',
+                    fontsize=11, fontweight='bold',
+                    bbox=dict(boxstyle='round,pad=0.28', facecolor='white', edgecolor=dimension_colors[i], alpha=0.95), zorder=6)
 
         plt.tight_layout(rect=[0, 0, 1, 0.93])
 
-        # 保存图片
+        # 保存逻辑
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_dimension_radar"
         paths = self.saver.save(fig, career_filename)
-        print(f"  💾 Dimension radar plot saved: {paths[0]}")
-
         return fig
-
 
 def plot_career_comparison(all_results, save_dir='./figures'):
     """
