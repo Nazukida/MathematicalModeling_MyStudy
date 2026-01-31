@@ -1,0 +1,10 @@
+﻿[WksPlotMenuMRUList]
+Version = 2
+1 = {"2097279","run.section(plot ,TernaryVector)","三元矢量"}
+2 = {"33267","","XYXY 矢量图(X)"}
+3 = {"2097301","run.section(plot ,PolarVectorAM)","极坐标矢量图 θrAM"}
+4 = {"33252","","XYAM 矢量图(V)"}
+5 = {"33249","","折线图(L)"}
+
+[Ver]
+34
