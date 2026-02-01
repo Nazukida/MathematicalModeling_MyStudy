@@ -1,0 +1,4 @@
+career=chef
+school=CMU
+target_year_used=2030
+F_t=317.7734057163078

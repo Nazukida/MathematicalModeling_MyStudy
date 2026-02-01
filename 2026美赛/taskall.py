@@ -16,7 +16,6 @@ AI 职业演化综合模型 - 完整工作流
 """
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from scipy.optimize import curve_fit
@@ -49,7 +48,8 @@ class PlotStyleConfig:
     def setup_style(style='academic'):
         """设置学术风格"""
         plt.style.use('default')  # 使用默认风格作为基础
-        rcParams['font.family'] = 'DejaVu Sans'  # 或者 'SimHei' 如果支持中文
+        rcParams['font.family'] = 'serif'
+        rcParams['font.serif'] = ['Times New Roman']
         rcParams['font.size'] = 12
         rcParams['axes.labelsize'] = 14
         rcParams['axes.titlesize'] = 16
@@ -181,7 +181,10 @@ class SDModel:
 
         # 劳动力需求：引入逻辑斯谛增长模拟非线性冲击
         K = 200  # 承载容量 (最大劳动力需求)
-        dL_dt = p.alpha * T * S * (1 - L/K) - p.beta * T * L
+        # 非线性替代效应：当技术成熟度超过阈值时，替代速度加快
+        threshold = 0.5  # 阈值
+        sigmoid_factor = 1 / (1 + np.exp(-10 * (T - threshold)))  # Sigmoid函数
+        dL_dt = p.alpha * T * S * (1 - L/K) - p.beta * T * L * sigmoid_factor
 
         # 技术成熟度：逻辑斯谛增长
         dT_dt = p.gamma * T * (1 - T)
@@ -223,19 +226,39 @@ class BNParams:
 
     def __init__(self):
         # 条件概率表 (CPT)
-        # P(High_Impact | Tech_Breakthrough, Policy)
+        # P(High_Impact | Tech_Breakthrough, Policy, Social_Acceptance, Mental_Wellbeing)
         self.cpt_high_impact = {
-            ('True', 'Supportive'): 0.8,
-            ('True', 'Neutral'): 0.6,
-            ('True', 'Restrictive'): 0.3,
-            ('False', 'Supportive'): 0.4,
-            ('False', 'Neutral'): 0.2,
-            ('False', 'Restrictive'): 0.1
+            ('True', 'Supportive', 'High', 'Good'): 0.9,
+            ('True', 'Supportive', 'High', 'Poor'): 0.7,
+            ('True', 'Supportive', 'Low', 'Good'): 0.6,
+            ('True', 'Supportive', 'Low', 'Poor'): 0.4,
+            ('True', 'Neutral', 'High', 'Good'): 0.7,
+            ('True', 'Neutral', 'High', 'Poor'): 0.5,
+            ('True', 'Neutral', 'Low', 'Good'): 0.5,
+            ('True', 'Neutral', 'Low', 'Poor'): 0.3,
+            ('True', 'Restrictive', 'High', 'Good'): 0.4,
+            ('True', 'Restrictive', 'High', 'Poor'): 0.2,
+            ('True', 'Restrictive', 'Low', 'Good'): 0.3,
+            ('True', 'Restrictive', 'Low', 'Poor'): 0.1,
+            ('False', 'Supportive', 'High', 'Good'): 0.5,
+            ('False', 'Supportive', 'High', 'Poor'): 0.3,
+            ('False', 'Supportive', 'Low', 'Good'): 0.4,
+            ('False', 'Supportive', 'Low', 'Poor'): 0.2,
+            ('False', 'Neutral', 'High', 'Good'): 0.3,
+            ('False', 'Neutral', 'High', 'Poor'): 0.2,
+            ('False', 'Neutral', 'Low', 'Good'): 0.2,
+            ('False', 'Neutral', 'Low', 'Poor'): 0.1,
+            ('False', 'Restrictive', 'High', 'Good'): 0.2,
+            ('False', 'Restrictive', 'High', 'Poor'): 0.1,
+            ('False', 'Restrictive', 'Low', 'Good'): 0.1,
+            ('False', 'Restrictive', 'Low', 'Poor'): 0.05
         }
 
         # 先验概率
         self.prior_tech_breakthrough = 0.3
         self.prior_policy = {'Supportive': 0.4, 'Neutral': 0.4, 'Restrictive': 0.2}
+        self.prior_social_acceptance = {'High': 0.6, 'Low': 0.4}
+        self.prior_mental_wellbeing = {'Good': 0.7, 'Poor': 0.3}
 
 
 class BNModel:
@@ -246,30 +269,34 @@ class BNModel:
     def __init__(self, params: BNParams):
         self.params = params
 
-    def compute_probability(self, tech_breakthrough, policy):
+    def compute_probability(self, tech_breakthrough, policy, social_acceptance, mental_wellbeing):
         """
         计算高冲击概率
 
         :param tech_breakthrough: 技术突破 (True/False)
         :param policy: 政策 ('Supportive'/'Neutral'/'Restrictive')
+        :param social_acceptance: 社会接受度 ('High'/'Low')
+        :param mental_wellbeing: 心理健康 ('Good'/'Poor')
         :return: 高冲击概率
         """
-        key = (str(tech_breakthrough), policy)
+        key = (str(tech_breakthrough), policy, social_acceptance, mental_wellbeing)
         return self.params.cpt_high_impact.get(key, 0.5)
 
     def predict_impact(self, scenarios):
         """
         预测不同情景下的冲击
 
-        :param scenarios: 情景列表 [(tech, policy), ...]
+        :param scenarios: 情景列表 [(tech, policy, social, mental), ...]
         :return: 预测结果
         """
         results = []
-        for tech, policy in scenarios:
-            prob = self.compute_probability(tech, policy)
+        for tech, policy, social, mental in scenarios:
+            prob = self.compute_probability(tech, policy, social, mental)
             results.append({
                 'tech_breakthrough': tech,
                 'policy': policy,
+                'social_acceptance': social,
+                'mental_wellbeing': mental,
                 'high_impact_prob': prob
             })
         return results
@@ -298,12 +325,30 @@ class SD_BN_Model:
 
         # BN情景分析
         scenarios = [
-            (True, 'Supportive'),
-            (True, 'Neutral'),
-            (True, 'Restrictive'),
-            (False, 'Supportive'),
-            (False, 'Neutral'),
-            (False, 'Restrictive')
+            (True, 'Supportive', 'High', 'Good'),
+            (True, 'Supportive', 'High', 'Poor'),
+            (True, 'Supportive', 'Low', 'Good'),
+            (True, 'Supportive', 'Low', 'Poor'),
+            (True, 'Neutral', 'High', 'Good'),
+            (True, 'Neutral', 'High', 'Poor'),
+            (True, 'Neutral', 'Low', 'Good'),
+            (True, 'Neutral', 'Low', 'Poor'),
+            (True, 'Restrictive', 'High', 'Good'),
+            (True, 'Restrictive', 'High', 'Poor'),
+            (True, 'Restrictive', 'Low', 'Good'),
+            (True, 'Restrictive', 'Low', 'Poor'),
+            (False, 'Supportive', 'High', 'Good'),
+            (False, 'Supportive', 'High', 'Poor'),
+            (False, 'Supportive', 'Low', 'Good'),
+            (False, 'Supportive', 'Low', 'Poor'),
+            (False, 'Neutral', 'High', 'Good'),
+            (False, 'Neutral', 'High', 'Poor'),
+            (False, 'Neutral', 'Low', 'Good'),
+            (False, 'Neutral', 'Low', 'Poor'),
+            (False, 'Restrictive', 'High', 'Good'),
+            (False, 'Restrictive', 'High', 'Poor'),
+            (False, 'Restrictive', 'Low', 'Good'),
+            (False, 'Restrictive', 'Low', 'Poor')
         ]
         bn_results = self.bn_model.predict_impact(scenarios)
 
@@ -344,17 +389,28 @@ class AHPModel:
     def __init__(self, params: AHPParams):
         self.params = params
 
-    def calculate_weights(self):
+    def calculate_weights(self, t=0):
         """
-        计算准则权重
+        计算准则权重 (动态权重)
 
+        :param t: 时间参数 (0-1, 0为初期, 1为后期)
         :return: 权重向量和一致性比率
         """
         A = self.params.judgment_matrix
         n = A.shape[0]
 
+        # 动态调整判断矩阵：后期更重视伦理与独特性
+        dynamic_A = A.copy()
+        if t > 0.5:  # 后期
+            # 增加伦理合规性的权重
+            dynamic_A[3, :] *= 1.5  # 伦理合规性行
+            dynamic_A[:, 3] /= 1.5  # 伦理合规性列
+            # 增加技艺独特性权重
+            dynamic_A[1, :] *= 1.2
+            dynamic_A[:, 1] /= 1.2
+
         # 计算特征值和特征向量
-        eigenvals, eigenvecs = np.linalg.eig(A)
+        eigenvals, eigenvecs = np.linalg.eig(dynamic_A)
         max_eigenval = np.max(eigenvals.real)
         weights = eigenvecs[:, np.argmax(eigenvals.real)].real
         weights = weights / np.sum(weights)
@@ -366,14 +422,15 @@ class AHPModel:
 
         return weights, CR
 
-    def sensitivity_analysis(self, perturbation=0.1):
+    def sensitivity_analysis(self, perturbation=0.1, t=0):
         """
         AHP权重灵敏度分析
 
         :param perturbation: 权重波动幅度 (±10%)
+        :param t: 时间参数
         :return: 灵敏度分析结果
         """
-        original_weights, original_CR = self.calculate_weights()
+        original_weights, original_CR = self.calculate_weights(t)
         results = []
 
         for i in range(len(original_weights)):
@@ -381,6 +438,13 @@ class AHPModel:
             perturbed_matrix = self.params.judgment_matrix.copy()
             perturbed_matrix[i, :] *= (1 + perturbation)
             perturbed_matrix[:, i] /= (1 + perturbation)
+
+            # 动态调整
+            if t > 0.5:
+                perturbed_matrix[3, :] *= 1.5
+                perturbed_matrix[:, 3] /= 1.5
+                perturbed_matrix[1, :] *= 1.2
+                perturbed_matrix[:, 1] /= 1.2
 
             # 重新计算权重
             A = perturbed_matrix
@@ -414,13 +478,13 @@ class MOEADParams:
 
     def __init__(self):
         self.population_size = 50
-        self.max_generations = 10  # 减少代数以便展示
+        self.max_generations = 50  # 提高代数以便收敛
         self.neighborhood_size = 10
         self.crossover_rate = 0.8
         self.mutation_rate = 0.1
 
         # 目标函数权重
-        self.weights = np.random.rand(self.population_size, 3)  # 三个目标
+        self.weights = np.random.rand(self.population_size, 4)  # 四个目标
         self.weights = self.weights / np.sum(self.weights, axis=1, keepdims=True)
 
 
@@ -437,7 +501,7 @@ class MOEADModel:
         目标函数
 
         :param x: 决策变量 [basic_enrollment, ai_enrollment, course_reform_rate]
-        :return: 目标值 [f1, f2, f3]
+        :return: 目标值 [f1, f2, f3, f4]
         """
         basic_enrollment, ai_enrollment, course_reform_rate = x
 
@@ -450,18 +514,28 @@ class MOEADModel:
         # f3: 碳足迹/环境影响目标 (最小化，AI可降低食材浪费)
         f3 = 0.3 * basic_enrollment - 0.2 * ai_enrollment - 0.1 * course_reform_rate
 
-        return [f1, f2, f3]
+        # f4: 技能过时率目标 (最小化，衡量教育改革速度与AI进化速度差距)
+        ai_evolution_rate = 0.8  # 假设AI进化速度
+        education_reform_rate = course_reform_rate
+        f4 = max(0, ai_evolution_rate - education_reform_rate)  # 差距
 
-    def optimize(self):
+        return [f1, f2, f3, f4]
+
+    def optimize(self, budget_constraint=1.0):
         """
         执行MOEA/D优化
 
+        :param budget_constraint: 预算约束 (总投入不能超过此值)
         :return: 帕累托前沿和演化历史
         """
         # 初始化种群
         population = []
         for i in range(self.params.population_size):
             x = np.random.rand(3)  # [basic_enrollment, ai_enrollment, course_reform_rate]
+            # 应用预算约束
+            total_budget = np.sum(x)
+            if total_budget > budget_constraint:
+                x = x * (budget_constraint / total_budget)
             f = self.objective_functions(x)
             population.append({'x': x, 'f': f})
 
@@ -484,6 +558,11 @@ class MOEADModel:
 
                 # 变异
                 offspring_x = self._mutate(offspring_x)
+
+                # 应用预算约束
+                total_budget = np.sum(offspring_x)
+                if total_budget > budget_constraint:
+                    offspring_x = offspring_x * (budget_constraint / total_budget)
 
                 # 评估
                 offspring_f = self.objective_functions(offspring_x)
@@ -552,17 +631,18 @@ class AHP_MOEAD_Model:
         self.ahp_model = AHPModel(self.ahp_params)
         self.moead_model = MOEADModel(self.moead_params)
 
-    def run_optimization(self):
+    def run_optimization(self, t=0):
         """
         运行完整优化
 
+        :param t: 时间参数
         :return: 结果字典
         """
         # AHP权重计算
-        weights, CR = self.ahp_model.calculate_weights()
+        weights, CR = self.ahp_model.calculate_weights(t)
 
         # AHP灵敏度分析
-        sensitivity_results = self.ahp_model.sensitivity_analysis()
+        sensitivity_results = self.ahp_model.sensitivity_analysis(t=t)
 
         # MOEA/D优化
         pareto_front, evolution_history = self.moead_model.optimize()
@@ -693,11 +773,36 @@ class FCEModel:
     def __init__(self, params: FCEParams):
         self.params = params
 
-    def evaluate_policy(self, policy_name):
+    def entropy_weight_method(self, data_matrix):
         """
-        评价特定政策
+        熵权法计算客观权重
+
+        :param data_matrix: 数据矩阵 (m个评价对象, n个指标)
+        :return: 熵权向量
+        """
+        m, n = data_matrix.shape
+
+        # 数据标准化 (正向化)
+        normalized = (data_matrix - np.min(data_matrix, axis=0)) / (np.max(data_matrix, axis=0) - np.min(data_matrix, axis=0) + 1e-8)
+
+        # 计算熵
+        p_ij = normalized / np.sum(normalized, axis=0, keepdims=True)
+        p_ij = np.where(p_ij == 0, 1e-8, p_ij)  # 避免log(0)
+        e_j = - (1 / np.log(m)) * np.sum(p_ij * np.log(p_ij), axis=0)
+
+        # 计算权重
+        d_j = 1 - e_j
+        weights = d_j / np.sum(d_j)
+
+        return weights
+
+    def evaluate_policy(self, policy_name, use_entropy=True, use_main_factor=True):
+        """
+        评价特定政策 (增强版)
 
         :param policy_name: 政策名称
+        :param use_entropy: 是否使用熵权法
+        :param use_main_factor: 是否使用主因素突出型算子
         :return: 综合评价向量
         """
         if policy_name not in self.params.membership_matrix:
@@ -706,8 +811,26 @@ class FCEModel:
         R = self.params.membership_matrix[policy_name]
         W = self.params.weights
 
-        # 综合评价: B = W * R
-        B = np.dot(W, R)
+        if use_entropy:
+            # 使用熵权法计算客观权重
+            entropy_weights = self.entropy_weight_method(R.T)  # R.T: 指标x对象 -> 对象x指标
+            # 组合赋权 (主观权重和客观权重平均)
+            W = (W + entropy_weights) / 2
+            W = W / np.sum(W)  # 归一化
+
+        # 综合评价
+        if use_main_factor:
+            # M(·, ⊕) 主因素突出型算子
+            # 如果伦理素养不及格，整体评价不能高
+            ethics_threshold = 0.6  # 伦理素养阈值
+            ethics_score = R[0, 0]  # 假设伦理素养是第一个准则的第一个等级
+            if ethics_score < ethics_threshold:
+                # 突出伦理因素
+                B = np.minimum(W @ R, ethics_score)
+            else:
+                B = W @ R
+        else:
+            B = np.dot(W, R)
 
         return B
 
@@ -764,17 +887,19 @@ class FCE_Correlation_Model:
         # if ahp_weights is not None:
         #     self.fce_params.weights = ahp_weights[:4]  # 取前四个权重对应FCE的四个准则
 
-    def run_evaluation(self):
+    def run_evaluation(self, use_entropy=True, use_main_factor=True):
         """
         运行完整评价
 
+        :param use_entropy: 是否使用熵权法
+        :param use_main_factor: 是否使用主因素突出型算子
         :return: 结果字典
         """
         # 模糊评价
         policies = list(self.fce_params.membership_matrix.keys())
         fce_results = {}
         for policy in policies:
-            fce_results[policy] = self.fce_model.evaluate_policy(policy)
+            fce_results[policy] = self.fce_model.evaluate_policy(policy, use_entropy, use_main_factor)
 
         # 相关性分析
         corr_results = self.corr_model.analyze_correlation()
@@ -797,7 +922,7 @@ class CBRParams:
     """
 
     def __init__(self):
-        # 案例库
+        # 案例库 (增强版，包含行业特征)
         self.case_base = [
             {
                 'id': 1,
@@ -805,7 +930,13 @@ class CBRParams:
                 'digital_level': 0.7,
                 'budget_per_student': 50000,
                 'ai_integration': 0.3,
-                'outcome': 'success'
+                'outcome': 'success',
+                'industry_features': {
+                    'physical_operation_ratio': 0.8,  # 物理操作比例
+                    'creativity_requirement': 0.9,    # 创造力要求
+                    'digitization_level': 0.4,        # 数字化程度
+                    'institution_type': 'trade_school'  # 机构类型
+                }
             },
             {
                 'id': 2,
@@ -813,7 +944,13 @@ class CBRParams:
                 'digital_level': 0.9,
                 'budget_per_student': 20000,
                 'ai_integration': 0.8,
-                'outcome': 'success'
+                'outcome': 'success',
+                'industry_features': {
+                    'physical_operation_ratio': 0.6,
+                    'creativity_requirement': 0.7,
+                    'digitization_level': 0.8,
+                    'institution_type': 'trade_school'
+                }
             },
             {
                 'id': 3,
@@ -821,7 +958,13 @@ class CBRParams:
                 'digital_level': 0.4,
                 'budget_per_student': 10000,
                 'ai_integration': 0.1,
-                'outcome': 'moderate'
+                'outcome': 'moderate',
+                'industry_features': {
+                    'physical_operation_ratio': 0.9,
+                    'creativity_requirement': 0.8,
+                    'digitization_level': 0.2,
+                    'institution_type': 'trade_school'
+                }
             },
             {
                 'id': 4,
@@ -829,7 +972,13 @@ class CBRParams:
                 'digital_level': 0.95,
                 'budget_per_student': 60000,
                 'ai_integration': 0.9,
-                'outcome': 'success'
+                'outcome': 'success',
+                'industry_features': {
+                    'physical_operation_ratio': 0.5,
+                    'creativity_requirement': 0.6,
+                    'digitization_level': 0.9,
+                    'institution_type': 'arts_school'
+                }
             }
         ]
 
@@ -844,17 +993,30 @@ class CBRModel:
 
     def calculate_similarity(self, query_case, base_case):
         """
-        计算相似度
+        计算相似度 (增强版，包含行业特征)
 
         :param query_case: 查询案例
         :param base_case: 基准案例
         :return: 相似度分数
         """
-        # 简单欧几里得距离
+        # 基本特征相似度
         features = ['digital_level', 'budget_per_student', 'ai_integration']
         distance = 0
         for feature in features:
             distance += (query_case[feature] - base_case[feature]) ** 2
+
+        # 行业特征相似度
+        industry_features = ['physical_operation_ratio', 'creativity_requirement', 'digitization_level']
+        for feature in industry_features:
+            if feature in query_case.get('industry_features', {}) and feature in base_case.get('industry_features', {}):
+                distance += (query_case['industry_features'][feature] - base_case['industry_features'][feature]) ** 2
+
+        # 机构类型相似度 (哑变量)
+        query_type = query_case.get('industry_features', {}).get('institution_type', '')
+        base_type = base_case.get('industry_features', {}).get('institution_type', '')
+        if query_type != base_type:
+            distance += 1  # 类型不同增加距离
+
         similarity = 1 / (1 + np.sqrt(distance))
         return similarity
 
@@ -897,10 +1059,13 @@ class GWRParams:
         self.coordinates = np.array([[city['lat'], city['lon']] for city in self.cities.values()])
         self.city_names = list(self.cities.keys())
 
-        # 模拟AI融入度和本地参数
+        # 模拟AI融入度和本地参数 (增强版，包含机构类型)
         np.random.seed(42)
         self.ai_integration = np.random.rand(len(self.cities)) * 100
         self.local_parameters = np.random.rand(len(self.cities), 3)
+
+        # 机构类型哑变量 (1: trade_school, 0: arts_school)
+        self.institution_type_dummies = np.random.choice([0, 1], size=len(self.cities))
 
 
 class GWRModel:
@@ -913,7 +1078,7 @@ class GWRModel:
 
     def local_regression(self, target_point, bandwidth=10):
         """
-        局部回归
+        局部回归 (增强版，包含机构类型哑变量)
 
         :param target_point: 目标点坐标
         :param bandwidth: 带宽
@@ -924,8 +1089,12 @@ class GWRModel:
         weights = np.exp(-distances ** 2 / (2 * bandwidth ** 2))
         weights = weights / np.sum(weights)
 
-        # 加权回归 (简化)
-        X = np.column_stack([np.ones(len(weights)), self.params.ai_integration])
+        # 加权回归 (包含哑变量)
+        X = np.column_stack([
+            np.ones(len(weights)),  # 截距
+            self.params.ai_integration,  # AI融入度
+            self.params.institution_type_dummies  # 机构类型哑变量
+        ])
         y = self.params.local_parameters[:, 0]  # 示例目标变量
 
         # 加权最小二乘
@@ -1149,6 +1318,225 @@ class ComprehensiveVisualization:
         paths = self.saver.save(fig, 'correlation_analysis')
         print(f"Correlation analysis visualization saved: {paths[0]}")
 
+    def plot_3d_response_surface(self, results):
+        """
+        绘制3D响应曲面图：AI替代率 vs 技能转型投入 对就业率的影响
+        """
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111, projection='3d')
+
+        # 生成参数网格
+        beta_range = np.linspace(0.05, 0.4, 20)  # AI替代率
+        skill_investment = np.linspace(0.1, 1.0, 20)  # 技能转型投入
+
+        BETA, SKILL = np.meshgrid(beta_range, skill_investment)
+        employment_rate = np.zeros_like(BETA)
+
+        # 计算每个参数组合的就业率
+        for i in range(len(beta_range)):
+            for j in range(len(skill_investment)):
+                # 简单模拟：就业率 = f(beta, skill)
+                employment_rate[j, i] = 0.8 - 0.5 * beta_range[i] + 0.3 * skill_investment[j] - 0.1 * beta_range[i] * skill_investment[j]
+
+        # 绘制曲面
+        surf = ax.plot_surface(BETA, SKILL, employment_rate, cmap='viridis', alpha=0.8, edgecolor='none')
+
+        # 添加颜色条
+        fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label='Employment Rate')
+
+        ax.set_title('3D Response Surface: AI Substitution vs Skill Investment')
+        ax.set_xlabel('AI Substitution Rate (β)')
+        ax.set_ylabel('Skill Investment Level')
+        ax.set_zlabel('Employment Rate')
+
+        # 标记最优点
+        max_idx = np.unravel_index(np.argmax(employment_rate), employment_rate.shape)
+        ax.scatter(BETA[max_idx], SKILL[max_idx], employment_rate[max_idx], color='red', s=100, marker='*', label='Optimal Point')
+        ax.legend()
+
+        paths = self.saver.save(fig, '3d_response_surface')
+        print(f"3D response surface visualization saved: {paths[0]}")
+
+    def plot_pareto_with_knee(self, results):
+        """
+        绘制带有膝盖点标注的帕累托前沿
+        """
+        fig = plt.figure(figsize=(14, 10))
+        ax = fig.add_subplot(111, projection='3d')
+
+        front = results['pareto_front']
+        points = np.array([ind['f'] for ind in front])
+
+        # 绘制散点
+        ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='blue', s=50, alpha=0.7, label='Pareto Front')
+
+        # 尝试绘制包络面 (简化：用凸包)
+        from scipy.spatial import ConvexHull
+        if len(points) >= 4:
+            try:
+                hull = ConvexHull(points)
+                for simplex in hull.simplices:
+                    ax.plot_trisurf(points[simplex, 0], points[simplex, 1], points[simplex, 2], color='cyan', alpha=0.3)
+            except Exception as e:
+                print(f"Warning: Could not compute convex hull: {e}")
+                # 如果凸包计算失败，只绘制散点
+
+        # 标记膝盖点
+        knee_info = results['knee_point']
+        knee_point = knee_info['solution']['f']
+        ax.scatter(knee_point[0], knee_point[1], knee_point[2], c='red', s=200, marker='*', label='Knee Point (Recommended)')
+
+        # 添加文本
+        ax.text(knee_point[0], knee_point[1], knee_point[2] + 0.1, 'Optimal Balance', fontsize=10, color='red')
+
+        ax.set_title('Pareto Front with Knee Point Annotation')
+        ax.set_xlabel('Employment Rate (minimize)')
+        ax.set_ylabel('Transition Cost (minimize)')
+        ax.set_zlabel('Carbon Footprint (minimize)')
+        ax.legend()
+
+        paths = self.saver.save(fig, 'pareto_with_knee')
+        print(f"Pareto front with knee point visualization saved: {paths[0]}")
+
+    def plot_sankey_diagram(self, results):
+        """
+        绘制桑基图：职业演化动态流转
+        """
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        # 模拟数据：从当前劳动力到未来角色
+        current_labor = {'Entry-level': 40, 'Mid-level': 35, 'Senior-level': 25}
+        future_roles = {'AI Collaborators': 45, 'Traditional Maintainers': 30, 'Displaced': 25}
+
+        # 流数据 (来源, 目标, 流量)
+        flows = [
+            ('Entry-level', 'AI Collaborators', 25),
+            ('Entry-level', 'Traditional Maintainers', 10),
+            ('Entry-level', 'Displaced', 5),
+            ('Mid-level', 'AI Collaborators', 20),
+            ('Mid-level', 'Traditional Maintainers', 10),
+            ('Mid-level', 'Displaced', 5),
+            ('Senior-level', 'AI Collaborators', 15),
+            ('Senior-level', 'Traditional Maintainers', 5),
+            ('Senior-level', 'Displaced', 5),
+        ]
+
+        # 简单桑基图实现 (使用条形图近似)
+        sources = list(current_labor.keys())
+        targets = list(future_roles.keys())
+
+        # 左侧条形图
+        y_pos_source = np.arange(len(sources))
+        ax.barh(y_pos_source, [current_labor[s] for s in sources], height=0.4, label='Current Labor', color='lightblue', alpha=0.7)
+
+        # 右侧条形图
+        y_pos_target = np.arange(len(targets))
+        ax.barh(y_pos_target + len(sources) + 1, [future_roles[t] for t in targets], height=0.4, label='Future Roles', color='lightgreen', alpha=0.7)
+
+        # 绘制流线 (简化)
+        for source, target, flow in flows:
+            source_idx = sources.index(source)
+            target_idx = targets.index(target) + len(sources) + 1
+            ax.arrow(source_idx, current_labor[source]/2, target_idx - source_idx, future_roles[target]/2 - current_labor[source]/2,
+                     head_width=2, head_length=2, fc='gray', ec='gray', alpha=0.5, length_includes_head=True)
+
+        ax.set_yticks(list(y_pos_source) + list(y_pos_target + len(sources) + 1))
+        ax.set_yticklabels(sources + targets)
+        ax.set_title('Career Evolution Flow: Current Labor to Future Roles')
+        ax.set_xlabel('Labor Force (%)')
+        ax.legend()
+
+        paths = self.saver.save(fig, 'sankey_diagram')
+        print(f"Sankey diagram visualization saved: {paths[0]}")
+
+    def plot_gwr_heatmap(self, results):
+        """
+        绘制GWR地理热力图
+        """
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        # 使用城市坐标
+        cities = ['New York', 'Paris', 'Tokyo', 'London', 'Beijing', 'San Francisco', 'Berlin', 'Sydney']
+        lats = [40.7128, 48.8566, 35.6762, 51.5074, 39.9042, 37.7749, 52.5200, -33.8688]
+        lons = [-74.0060, 2.3522, 139.6503, -0.1278, 116.4074, -122.4194, 13.4050, 151.2093]
+
+        # 模拟局部系数
+        coefficients = np.random.rand(len(cities)) * 2 - 1  # -1 到 1
+
+        # 绘制散点热力图
+        sc = ax.scatter(lons, lats, c=coefficients, cmap='RdYlBu_r', s=200, edgecolor='black', alpha=0.8)
+        plt.colorbar(sc, label='Local AI Impact Coefficient (β)')
+
+        # 添加城市标签
+        for i, city in enumerate(cities):
+            ax.annotate(city, (lons[i], lats[i]), xytext=(5, 5), textcoords='offset points')
+
+        ax.set_title('GWR Local Coefficients: Spatial Distribution of AI Impact')
+        ax.set_xlabel('Longitude')
+        ax.set_ylabel('Latitude')
+        ax.grid(True, alpha=0.3)
+
+        paths = self.saver.save(fig, 'gwr_heatmap')
+        print(f"GWR heatmap visualization saved: {paths[0]}")
+
+    def plot_integrated_dashboard(self, all_results):
+        """
+        绘制综合模型仪表盘：雷达图 + 指针图
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+
+        # 雷达图：不同职业在关键指标上的得分
+        categories = ['Ethics', 'Skills', 'Employment', 'Innovation', 'Culture']
+        values_chef = [0.7, 0.8, 0.6, 0.5, 0.9]  # 厨师
+        values_engineer = [0.6, 0.9, 0.8, 0.9, 0.6]  # 软件工程师
+        values_designer = [0.8, 0.7, 0.7, 0.7, 0.8]  # 图形设计师
+
+        angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
+        values_chef += values_chef[:1]
+        values_engineer += values_engineer[:1]
+        values_designer += values_designer[:1]
+        angles += angles[:1]
+
+        ax1.plot(angles, values_chef, 'o-', linewidth=2, label='Chef', color='blue')
+        ax1.fill(angles, values_chef, alpha=0.25, color='blue')
+        ax1.plot(angles, values_engineer, 'o-', linewidth=2, label='Software Engineer', color='green')
+        ax1.fill(angles, values_engineer, alpha=0.25, color='green')
+        ax1.plot(angles, values_designer, 'o-', linewidth=2, label='Graphic Designer', color='red')
+        ax1.fill(angles, values_designer, alpha=0.25, color='red')
+
+        ax1.set_xticks(angles[:-1])
+        ax1.set_xticklabels(categories)
+        ax1.set_ylim(0, 1)
+        ax1.set_title('Career Comparison Radar Chart')
+        ax1.legend(loc='upper right')
+
+        # 指针图：当前政策风险等级
+        risk_level = 0.65  # 模拟风险等级 (0-1)
+        theta = np.linspace(np.pi/2, 3*np.pi/2, 100)
+        r = 1
+        ax2.plot(r * np.cos(theta), r * np.sin(theta), 'k-', linewidth=2)
+
+        # 风险刻度
+        for i in range(11):
+            angle = np.pi/2 - i * np.pi / 10
+            ax2.plot([0, 0.9 * np.cos(angle)], [0, 0.9 * np.sin(angle)], 'k-', alpha=0.3)
+            ax2.text(1.1 * np.cos(angle), 1.1 * np.sin(angle), f'{i*10}%', ha='center', va='center')
+
+        # 指针
+        pointer_angle = np.pi/2 - risk_level * np.pi
+        ax2.arrow(0, 0, 0.8 * np.cos(pointer_angle), 0.8 * np.sin(pointer_angle),
+                  head_width=0.05, head_length=0.1, fc='red', ec='red')
+
+        ax2.set_xlim(-1.5, 1.5)
+        ax2.set_ylim(-1.5, 1.5)
+        ax2.set_aspect('equal')
+        ax2.set_title(f'Policy Risk Gauge: {risk_level*100:.0f}%')
+        ax2.axis('off')
+
+        plt.suptitle('Integrated Model Dashboard')
+        paths = self.saver.save(fig, 'integrated_dashboard')
+        print(f"Integrated dashboard visualization saved: {paths[0]}")
+
     def plot_gwr_spatial_sensitivity(self, results):
         """
         绘制GWR空间敏感度分布
@@ -1167,6 +1555,86 @@ class ComprehensiveVisualization:
 
         paths = self.saver.save(fig, 'gwr_spatial_sensitivity')
         print(f"GWR spatial sensitivity visualization saved: {paths[0]}")
+
+    def plot_phase_trajectory(self, results):
+        """
+        绘制相位轨迹图：劳动力需求 vs 技能匹配度
+        """
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        sd_res = results['sd_results']
+        labor = sd_res['labor_demand']
+        skill = sd_res['skill_matching']
+
+        # 绘制轨迹
+        ax.plot(labor, skill, 'b-', linewidth=2, alpha=0.7, label='Phase Trajectory')
+        ax.scatter(labor[0], skill[0], c='green', s=100, marker='o', label='Initial State')
+        ax.scatter(labor[-1], skill[-1], c='red', s=100, marker='x', label='Final State')
+
+        # 添加时间箭头
+        for i in range(0, len(labor)-1, 10):
+            ax.arrow(labor[i], skill[i], labor[i+1]-labor[i], skill[i+1]-skill[i],
+                     head_width=1, head_length=1, fc='blue', ec='blue', alpha=0.5)
+
+        # 寻找吸引子 (简化：最后几个点的平均)
+        attractor_labor = np.mean(labor[-10:])
+        attractor_skill = np.mean(skill[-10:])
+        ax.scatter(attractor_labor, attractor_skill, c='purple', s=150, marker='*', label='Stable Attractor')
+
+        ax.set_title('Phase Trajectory: Labor Demand vs Skill Matching')
+        ax.set_xlabel('Labor Demand')
+        ax.set_ylabel('Skill Matching Degree')
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+
+        paths = self.saver.save(fig, 'phase_trajectory')
+        print(f"Phase trajectory visualization saved: {paths[0]}")
+
+    def plot_pareto_with_envelope(self, results):
+        """
+        绘制带包络线的帕累托前沿
+        """
+        fig = plt.figure(figsize=(14, 10))
+        ax = fig.add_subplot(111, projection='3d')
+
+        front = results['pareto_front']
+        points = np.array([ind['f'] for ind in front])
+
+        # 绘制散点
+        ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='blue', s=50, alpha=0.7, label='Pareto Front')
+
+        # 计算凸包作为包络线
+        from scipy.spatial import ConvexHull
+        if len(points) >= 4:
+            try:
+                hull = ConvexHull(points)
+                # 绘制凸包面
+                for simplex in hull.simplices:
+                    triangle = points[simplex]
+                    ax.plot_trisurf(triangle[:, 0], triangle[:, 1], triangle[:, 2],
+                                   color='cyan', alpha=0.2, edgecolor='blue', linewidth=0.5)
+
+                # 突出显示凸包边缘
+                for simplex in hull.simplices:
+                    ax.plot(points[simplex, 0], points[simplex, 1], points[simplex, 2],
+                           'k-', linewidth=1, alpha=0.8)
+            except Exception as e:
+                print(f"Warning: Could not compute convex hull: {e}")
+                # 如果凸包计算失败，只绘制散点
+
+        # 标记膝盖点
+        knee_info = results['knee_point']
+        knee_point = knee_info['solution']['f']
+        ax.scatter(knee_point[0], knee_point[1], knee_point[2], c='red', s=200, marker='*', label='Knee Point')
+
+        ax.set_title('Pareto Front with Convex Hull Envelope')
+        ax.set_xlabel('Employment Rate (minimize)')
+        ax.set_ylabel('Transition Cost (minimize)')
+        ax.set_zlabel('Objective 4: Skill Obsolescence (minimize)')
+        ax.legend()
+
+        paths = self.saver.save(fig, 'pareto_with_envelope')
+        print(f"Pareto front with envelope visualization saved: {paths[0]}")
 
 
 def sensitivity_analysis(sd_model, param_name, param_range, t_span=10):
@@ -1267,6 +1735,29 @@ def run_comprehensive_models():
 
     print("  📊 绘制GWR空间敏感度...")
     viz.plot_gwr_spatial_sensitivity(cbr_gwr_results)
+
+    # 新增高级可视化
+    print("\n【Advanced Visualizations】高级可视化...")
+    print("  📊 绘制3D响应曲面...")
+    viz.plot_3d_response_surface({})  # 独立的可视化
+
+    print("  📊 绘制帕累托前沿与膝盖点...")
+    viz.plot_pareto_with_knee(ahp_moead_results)
+
+    print("  📊 绘制桑基图...")
+    viz.plot_sankey_diagram(sd_bn_results)
+
+    print("  📊 绘制GWR热力图...")
+    viz.plot_gwr_heatmap(cbr_gwr_results)
+
+    print("  📊 绘制综合仪表盘...")
+    viz.plot_integrated_dashboard({})  # 传递空字典或模拟数据
+
+    print("  📊 绘制相位轨迹图...")
+    viz.plot_phase_trajectory(sd_bn_results)
+
+    print("  📊 绘制带包络线的帕累托前沿...")
+    viz.plot_pareto_with_envelope(ahp_moead_results)
 
     # 灵敏度分析
     print("\n【Sensitivity Analysis】参数灵敏度分析...")

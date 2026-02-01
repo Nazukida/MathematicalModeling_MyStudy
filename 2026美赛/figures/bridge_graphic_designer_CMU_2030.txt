@@ -1,0 +1,4 @@
+career=graphic_designer
+school=CMU
+target_year_used=2030
+F_t=23.063735341848755

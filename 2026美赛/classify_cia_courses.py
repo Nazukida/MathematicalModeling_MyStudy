@@ -1,0 +1,432 @@
+import os
+import torch
+import pandas as pd
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from scipy.spatial.distance import cdist, cosine
+from tqdm import tqdm
+
+# 1. 屏蔽 IPEX 的 XPU，强制 PyTorch 只看得到 CPU
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["IPEX_XPU_BACKEND_FLAGS"] = "0" # 禁用 IPEX 优化
+
+# CIA课程数据 (从用户提供的数据中提取)
+courses_data = [
+    {"Course Number": "LART-400", "Title": "A Sense of Place: Critical Perspectives on the California Wine Industry", "Credits": 3},
+    {"Course Number": "BAKE-251", "Title": "Advanced Baking Principles", "Credits": 3},
+    {"Course Number": "MWBM-520", "Title": "Advanced Beverage Management", "Credits": 3},
+    {"Course Number": "ADVP-302", "Title": "Advanced Bread Baking", "Credits": 3},
+    {"Course Number": "CUSC-420", "Title": "Advanced Concepts in Precision Temperature Cooking", "Credits": 3},
+    {"Course Number": "ADVC-301", "Title": "Advanced Cooking", "Credits": 3},
+    {"Course Number": "ADVC-301AN", "Title": "Advanced Cooking: Africa the Matrix", "Credits": 3},
+    {"Course Number": "ADVC-301AD", "Title": "Advanced Cooking: Afro-Caribbean", "Credits": 3},
+    {"Course Number": "ADVC-301A", "Title": "Advanced Cooking: Asian", "Credits": 3},
+    {"Course Number": "ADVC-301M", "Title": "Advanced Cooking: Cuisine of the Northern Mediterranean", "Credits": 3},
+    {"Course Number": "ADVC-301F", "Title": "Advanced Cooking: Farm to Table", "Credits": 3},
+    {"Course Number": "ADVC-301L", "Title": "Advanced Cooking: Latin", "Credits": 3},
+    {"Course Number": "MGMT-337", "Title": "Advanced Food Service Operations", "Credits": 3},
+    {"Course Number": "ADVC-305", "Title": "Advanced Japanese Cuisine (Kaiseki)", "Credits": 3},
+    {"Course Number": "ADVP-301", "Title": "Advanced Pastry", "Credits": 3},
+    {"Course Number": "HSBV-380", "Title": "Advanced Principles of Service Management in Hospitality", "Credits": 3},
+    {"Course Number": "LART-337", "Title": "African American Chefs and Southern Food", "Credits": 3},
+    {"Course Number": "LART-335", "Title": "Ancient Foods in a Modern World: Latin American Crops in the Global Arena", "Credits": 3},
+    {"Course Number": "SOCS-200", "Title": "Anthropology of Food", "Credits": 3},
+    {"Course Number": "BAKE-260", "Title": "Applied Baking and Pastry Production", "Credits": 3},
+    {"Course Number": "HMCE-492", "Title": "Applied Culinary Tourism", "Credits": 3},
+    {"Course Number": "APFS-200", "Title": "Applied Food Studies", "Credits": 3},
+    {"Course Number": "MSFS-581", "Title": "Applied Project in Food Systems and Sustainability", "Credits": 2},
+    {"Course Number": "HSBV-365", "Title": "Art and Science of Brewing", "Credits": 3},
+    {"Course Number": "BPSE-423", "Title": "Asian Cuisine I", "Credits": 3},
+    {"Course Number": "BPSE-424", "Title": "Asian Cuisine II", "Credits": 3},
+    {"Course Number": "CULA-350", "Title": "Back of House Restaurant Operations", "Credits": 6},
+    {"Course Number": "CULA-350A", "Title": "Back of House Restaurant Operations - American Bounty", "Credits": 6},
+    {"Course Number": "CULA-350B", "Title": "Back of House Restaurant Operations - Bocuse", "Credits": 6},
+    {"Course Number": "CULA-350C", "Title": "Back of House Restaurant Operations - Caterina", "Credits": 6},
+    {"Course Number": "CULA-350P", "Title": "Back of House Restaurant Operations - Post Rd Brewhouse", "Credits": 6},
+    {"Course Number": "BAKE-151", "Title": "Baking and Pastry Practical Examination I", "Credits": 0},
+    {"Course Number": "BAKE-230", "Title": "Baking and Pastry Practical Examination II", "Credits": 0},
+    {"Course Number": "BAKE-241", "Title": "Baking and Pastry Skill Development", "Credits": 3},
+    {"Course Number": "BAKE-105", "Title": "Baking and Pastry Techniques", "Credits": 6},
+    {"Course Number": "BAKE-110", "Title": "Baking Ingredients and Equipment Technology", "Credits": 1.5},
+    {"Course Number": "BAKE-205", "Title": "Basic and Classical Cakes", "Credits": 3},
+    {"Course Number": "BPSE-440", "Title": "Basic Japanese Cuisine", "Credits": 3},
+    {"Course Number": "HSBV-340", "Title": "Beer and Fermented Beverages: History, Cultures, and Styles", "Credits": 3},
+    {"Course Number": "HSBV-305", "Title": "Beverage Operations Management", "Credits": 3},
+    {"Course Number": "BAKE-255", "Title": "Beverages and Customer Service", "Credits": 3},
+    {"Course Number": "APFS-305", "Title": "Building Sustainable Food Communities", "Credits": 3},
+    {"Course Number": "MGMT-314", "Title": "Business Communication", "Credits": 3},
+    {"Course Number": "MFBS-500", "Title": "Business Fundamentals", "Credits": 3},
+    {"Course Number": "MGMT-407", "Title": "Business Planning", "Credits": 3},
+    {"Course Number": "BAKE-254", "Title": "Café Operations", "Credits": 3},
+    {"Course Number": "BAKE-115", "Title": "Café Savory Foods Production", "Credits": 1.5},
+    {"Course Number": "MTSC-205", "Title": "Calculus I", "Credits": 3},
+    {"Course Number": "BPSE-407", "Title": "Chef-Community Relations", "Credits": 3},
+    {"Course Number": "BAKE-242", "Title": "Chocolate and Confectionery Technology and Techniques", "Credits": 3},
+    {"Course Number": "MCUL-501A", "Title": "Cohort Formation, Culinary Arts MPS", "Credits": 1},
+    {"Course Number": "MTSC-110", "Title": "College Algebra", "Credits": 3},
+    {"Course Number": "LITC-100", "Title": "College Writing", "Credits": 3},
+    {"Course Number": "LITC-105", "Title": "College Writing II", "Credits": 3},
+    {"Course Number": "BPSE-450AN", "Title": "Concentration Capstone: African Cuisine", "Credits": 3},
+    {"Course Number": "BPSE-450A", "Title": "Concentration Capstone: Asian Cuisine", "Credits": 3},
+    {"Course Number": "BPSE-450J", "Title": "Concentration Capstone: Japanese", "Credits": 3},
+    {"Course Number": "BPSE-450L", "Title": "Concentration Capstone: Latin Cuisine", "Credits": 3},
+    {"Course Number": "BPSE-450M", "Title": "Concentration Capstone: Mediterranean", "Credits": 3},
+    {"Course Number": "MFBS-545", "Title": "Concept Building, Proving, Prototyping", "Credits": 3},
+    {"Course Number": "BAKE-240", "Title": "Confectionery Art and Special Occasion Cakes", "Credits": 3},
+    {"Course Number": "MGMT-350", "Title": "Consumer Behavior", "Credits": 3},
+    {"Course Number": "BAKE-245", "Title": "Contemporary Cakes and Desserts", "Credits": 3},
+    {"Course Number": "HOSP-310", "Title": "Contemporary Hospitality and Service Management", "Credits": 3},
+    {"Course Number": "CULA-310", "Title": "Contemporary Restaurant Cooking", "Credits": 3},
+    {"Course Number": "CULS-125", "Title": "Contemporary Topics in Culinary Arts", "Credits": 3},
+    {"Course Number": "HMFB-420", "Title": "Contemporary Topics in Food and Beverage", "Credits": 3},
+    {"Course Number": "MGMT-425", "Title": "Contemporary Topics in Food and Beverage", "Credits": 3},
+    {"Course Number": "HMHC-389.2", "Title": "Convention Planning and Execution", "Credits": 2},
+    {"Course Number": "LART-338", "Title": "Cooking and Tasting Local Sustainable Foodways", "Credits": 3},
+    {"Course Number": "ACBP-450", "Title": "Creative Artisanal Chocolates", "Credits": 3},
+    {"Course Number": "BPSE-429", "Title": "Cuisine of the Iberian Peninsula", "Credits": 3},
+    {"Course Number": "BPSE-428", "Title": "Cuisine of the Southern Mediterranean", "Credits": 3},
+    {"Course Number": "CULP-321", "Title": "Cuisines and Cultures of Asia", "Credits": 3},
+    {"Course Number": "CULP-301", "Title": "Cuisines and Cultures of the Americas", "Credits": 3},
+    {"Course Number": "CULP-311", "Title": "Cuisines and Cultures of the Mediterranean", "Credits": 3},
+    {"Course Number": "CULP-320", "Title": "Cuisines of Asia", "Credits": 2},
+    {"Course Number": "CULP-300", "Title": "Cuisines of the Americas", "Credits": 2},
+    {"Course Number": "CULP-310", "Title": "Cuisines of the Mediterranean", "Credits": 2},
+    {"Course Number": "CUSC-310", "Title": "Culinary Chemistry", "Credits": 3},
+    {"Course Number": "CULS-100", "Title": "Culinary Fundamentals", "Credits": 6},
+    {"Course Number": "CULS-120", "Title": "Culinary Immersion Tech & Theory", "Credits": 3},
+    {"Course Number": "CULS-189.1", "Title": "Culinary Immersion Techniques and Theory For the Hospitality Industry", "Credits": 6},
+    {"Course Number": "CULS-110", "Title": "Culinary Immersion Techniques and Theory For the Hospitality Industry", "Credits": 6},
+    {"Course Number": "CULS-151", "Title": "Culinary Practical Examination I (Cooking Practical)", "Credits": 0},
+    {"Course Number": "CULS-152", "Title": "Culinary Practical Examination I (Written Exam)", "Credits": 0},
+    {"Course Number": "CULS-251", "Title": "Culinary Practical Examination II", "Credits": 0},
+    {"Course Number": "CUSC-410", "Title": "Culinary Research and Development", "Credits": 3},
+    {"Course Number": "CUSC-200", "Title": "Culinary Science: Principles and Applications", "Credits": 3},
+    {"Course Number": "MSFS-550", "Title": "Culinary Strategy and Food System Innovation", "Credits": 3},
+    {"Course Number": "MCTH-530", "Title": "Culinary Techniques and Their Impact on Health and Wellness", "Credits": 3},
+    {"Course Number": "HMCE-302", "Title": "Culinary Tourism I", "Credits": 3},
+    {"Course Number": "HMCE-322", "Title": "Culinary Tourism II", "Credits": 3},
+    {"Course Number": "MCTH-570", "Title": "Cultivating Healthy and Mindful Lifestyles", "Credits": 3},
+    {"Course Number": "MGMT-351", "Title": "Current Issues in Hospitality Technology", "Credits": 3},
+    {"Course Number": "MFBS-520", "Title": "Design Thinking for Food", "Credits": 3},
+    {"Course Number": "MFBS-555", "Title": "Differentiation, Branding, and Packaging", "Credits": 3},
+    {"Course Number": "ADWN-509", "Title": "Distilled Spirits and Introduction to Mixology", "Credits": 3},
+    {"Course Number": "CUSC-315", "Title": "Dynamics of Heat Transfer and Physical Properties of Food", "Credits": 3},
+    {"Course Number": "APFS-320", "Title": "Ecology of Food", "Credits": 3},
+    {"Course Number": "FREN-101", "Title": "Elementary French I", "Credits": 3},
+    {"Course Number": "FREN-102", "Title": "Elementary French II", "Credits": 3},
+    {"Course Number": "ITAL-101", "Title": "Elementary Italian I", "Credits": 3},
+    {"Course Number": "ITAL-102", "Title": "Elementary Italian II", "Credits": 3},
+    {"Course Number": "SPAN-101", "Title": "Elementary Spanish I", "Credits": 3},
+    {"Course Number": "SPAN-102", "Title": "Elementary Spanish II", "Credits": 3},
+    {"Course Number": "MWBM-570", "Title": "Entrepreneurial Innovation and Business for Wine and Beverage", "Credits": 3},
+    {"Course Number": "MFBS-530", "Title": "Ethical Leadership in the Food Business", "Credits": 3},
+    {"Course Number": "MGMT-389.3", "Title": "Event Contract Negotiation", "Credits": 3},
+    {"Course Number": "HMCE-375", "Title": "Event Contract Negotiation", "Credits": 3},
+    {"Course Number": "HMCE-301", "Title": "Event Design and Project Management", "Credits": 3},
+    {"Course Number": "HMCE-491", "Title": "Event Management Capstone", "Credits": 3},
+    {"Course Number": "MGMT-389.1", "Title": "Event Management Software & Innovations Planning", "Credits": 3},
+    {"Course Number": "HMCE-325", "Title": "Event Management Software and Innovations", "Credits": 3},
+    {"Course Number": "MGMT-331", "Title": "Event Planning I", "Credits": 3},
+    {"Course Number": "MSFS-501A", "Title": "Exploring San Francisco Bay Area Food Systems", "Credits": 1},
+    {"Course Number": "MSFS-501B", "Title": "Exploring the Hudson Valley Food Systems", "Credits": 1},
+    {"Course Number": "EXTN-252", "Title": "Externship", "Credits": 2.5},
+    {"Course Number": "EXTN-250", "Title": "Externship", "Credits": 2.5},
+    {"Course Number": "EXTN-225", "Title": "Externship (Baking & Pastry)", "Credits": 3},
+    {"Course Number": "EXTN-220", "Title": "Externship (Culinary Arts)", "Credits": 3},
+    {"Course Number": "EXTN-210", "Title": "Externship Orientation", "Credits": 0},
+    {"Course Number": "EXTN-205", "Title": "Externship Prep Seminar II", "Credits": 0},
+    {"Course Number": "BPSE-402", "Title": "Farm to Fork: Practices of a Sustainable Table", "Credits": 3},
+    {"Course Number": "LART-330", "Title": "Feasting and Fasting in Latin America", "Credits": 3},
+    {"Course Number": "ADWN-506", "Title": "Fermented and Non-Alcoholic Beverages", "Credits": 3},
+    {"Course Number": "BPSE-409", "Title": "Field Experience and Action Plan", "Credits": 3},
+    {"Course Number": "MGMT-255", "Title": "Finance", "Credits": 3},
+    {"Course Number": "MGMT-115", "Title": "Financial Accounting", "Credits": 3},
+    {"Course Number": "CUSC-320", "Title": "Flavor Science and Perception", "Credits": 3},
+    {"Course Number": "LART-311", "Title": "Food and Cultures: France", "Credits": 3},
+    {"Course Number": "LART-312", "Title": "Food and Cultures: Italy", "Credits": 3},
+    {"Course Number": "LART-313", "Title": "Food and Cultures: Spain", "Credits": 3},
+    {"Course Number": "FBLS-300", "Title": "Food Business Leadership", "Credits": 3},
+    {"Course Number": "MFBS-580", "Title": "Food Business Playbook", "Credits": 3},
+    {"Course Number": "LART-352", "Title": "Food for Good: Social Movements and Entrepreneurship", "Credits": 3},
+    {"Course Number": "APFS-310", "Title": "Food History", "Credits": 3},
+    {"Course Number": "LART-317", "Title": "Food in Film", "Credits": 3},
+    {"Course Number": "MFBS-542", "Title": "Food Industry Organizational Management", "Credits": 3},
+    {"Course Number": "MSFS-560", "Title": "Food Movement Voices: How to Create Change", "Credits": 3},
+    {"Course Number": "BPSE-306", "Title": "Food Photography & Food Styling", "Credits": 3},
+    {"Course Number": "APFS-420", "Title": "Food Policy", "Credits": 3},
+    {"Course Number": "CUSC-100", "Title": "Food Safety", "Credits": 1.5},
+    {"Course Number": "LART-320", "Title": "Food Writing", "Credits": 3},
+    {"Course Number": "MGMT-450", "Title": "Foodservice Management", "Credits": 3},
+    {"Course Number": "MGMT-325", "Title": "Foodservice Technology", "Credits": 3},
+    {"Course Number": "HOSP-320", "Title": "Formal Hospitality and Service Management", "Credits": 3},
+    {"Course Number": "CULA-320", "Title": "Formal Restaurant Cooking", "Credits": 3},
+    {"Course Number": "HMFB-110", "Title": "Foundations of Hospitality Management", "Credits": 3},
+    {"Course Number": "CULP-225", "Title": "Garde Manger", "Credits": 3},
+    {"Course Number": "APFS-155", "Title": "Gastronomy", "Credits": 3},
+    {"Course Number": "CULP-325", "Title": "Global Cuisines", "Credits": 3},
+    {"Course Number": "LART-215", "Title": "Global Cuisines & Cult: China", "Credits": 3},
+    {"Course Number": "LART-205", "Title": "Global Cuisines & Cult: France", "Credits": 3},
+    {"Course Number": "LART-225", "Title": "Global Cuisines & Cultures: Costa Rica", "Credits": 3},
+    {"Course Number": "LART-240", "Title": "Global Cuisines and Cultures: Greece", "Credits": 3},
+    {"Course Number": "LART-200", "Title": "Global Cuisines and Cultures: Italy", "Credits": 3},
+    {"Course Number": "LART-220", "Title": "Global Cuisines and Cultures: Peru", "Credits": 3},
+    {"Course Number": "LART-210", "Title": "Global Cuisines and Cultures: Spain", "Credits": 3},
+    {"Course Number": "BPSE-230", "Title": "Global Cuisines and Cultures: U.S. Northern California", "Credits": 3},
+    {"Course Number": "HMCE-321", "Title": "Global Event Management (Event Planning II)", "Credits": 3},
+    {"Course Number": "MGMT-389.2", "Title": "Global Events", "Credits": 3},
+    {"Course Number": "MWBM-500", "Title": "Global Wine Business Operations", "Credits": 3},
+    {"Course Number": "ADWN-507", "Title": "Global Wine Business Operations", "Credits": 3},
+    {"Course Number": "LART-250", "Title": "Globalization in Historic and Contemporary Contexts", "Credits": 3},
+    {"Course Number": "MCUL-580", "Title": "Graduate Seminar and Capstone Project", "Credits": 3},
+    {"Course Number": "MWBM-580", "Title": "Graduate Seminar and Capstone Project", "Credits": 2},
+    {"Course Number": "MCTH-580", "Title": "Graduate Seminar and Capstone Project", "Credits": 3},
+    {"Course Number": "ADWN-510", "Title": "Graduate Seminar in Research and Writing", "Credits": 3},
+    {"Course Number": "ADWN-511", "Title": "Graduate Seminar: Research, Scholarly Writing, Business Project, Part 1", "Credits": 1.5},
+    {"Course Number": "ADWN-512", "Title": "Graduate Seminar: Research, Scholarly Writing, Business Project, Part 2", "Credits": 1.5},
+    {"Course Number": "MCTH-560", "Title": "Health and Wellness Systems Integration", "Credits": 3},
+    {"Course Number": "BAKE-210", "Title": "Hearth Breads and Rolls", "Credits": 3},
+    {"Course Number": "CULP-130", "Title": "High-Volume Production Cookery", "Credits": 3},
+    {"Course Number": "HIST-200", "Title": "History and Cultures of Asia", "Credits": 3},
+    {"Course Number": "HIST-205", "Title": "History and Cultures of Europe", "Credits": 3},
+    {"Course Number": "HIST-210", "Title": "History and Cultures of the Americas", "Credits": 3},
+    {"Course Number": "LART-255", "Title": "History of Africa", "Credits": 3},
+    {"Course Number": "HMFB-200", "Title": "Hospitality Internship Orientation", "Credits": 0},
+    {"Course Number": "HMMS-425", "Title": "Hospitality Labor Relations", "Credits": 3},
+    {"Course Number": "MGMT-309", "Title": "Hospitality Law", "Credits": 3},
+    {"Course Number": "HMHC-310", "Title": "Hospitality Law", "Credits": 3},
+    {"Course Number": "HMFB-300", "Title": "Hospitality Management Internship", "Credits": 3},
+    {"Course Number": "HMHC-315", "Title": "Hospitality Operations Management", "Credits": 3},
+    {"Course Number": "HMFB-115", "Title": "Hospitality Supply Chain Management and Procurement", "Credits": 3},
+    {"Course Number": "MFBS-562", "Title": "Hospitality, Branding, and Marketing Strategies", "Credits": 3},
+    {"Course Number": "HOSP-350", "Title": "Hospitality, Service, and Restaurant Management", "Credits": 6},
+    {"Course Number": "HOSP-350A", "Title": "Hospitality, Service, and Restaurant Management - American Bounty", "Credits": 6},
+    {"Course Number": "HOSP-350B", "Title": "Hospitality, Service, and Restaurant Management - Bocuse", "Credits": 6},
+    {"Course Number": "HOSP-350C", "Title": "Hospitality, Service, and Restaurant Management - Caterina", "Credits": 6},
+    {"Course Number": "HOSP-350P", "Title": "Hospitality, Service, and Restaurant Management - Post Rd Brewhouse", "Credits": 6},
+    {"Course Number": "MGMT-210", "Title": "Human Resource Management", "Credits": 3},
+    {"Course Number": "BAKE-215", "Title": "Individual and Production Pastries", "Credits": 3},
+    {"Course Number": "SOCS-175", "Title": "Industrial and Organizational Psychology", "Credits": 3},
+    {"Course Number": "CUSC-415", "Title": "Ingredient Functionality: Texture Development, Stability, and Flavor Release", "Credits": 3},
+    {"Course Number": "CULS-105", "Title": "Ingredients and Techniques of Fabrication", "Credits": 3},
+    {"Course Number": "FREN-201", "Title": "Intermediate French", "Credits": 3},
+    {"Course Number": "FREN-355", "Title": "Intermediate French II", "Credits": 3},
+    {"Course Number": "ITAL-201", "Title": "Intermediate Italian", "Credits": 3},
+    {"Course Number": "SPAN-201", "Title": "Intermediate Spanish", "Credits": 3},
+    {"Course Number": "SPAN-355", "Title": "Intermediate Spanish II", "Credits": 3},
+    {"Course Number": "MCUL-501B", "Title": "International Perspectives on Food and Wine", "Credits": 1},
+    {"Course Number": "LITC-305", "Title": "Interpreting Literature", "Credits": 3},
+    {"Course Number": "MGMT-445", "Title": "Intraventure Planning", "Credits": 3},
+    {"Course Number": "CULP-115", "Title": "Introduction to À La Carte Cooking", "Credits": 3},
+    {"Course Number": "MGMT-340", "Title": "Introduction to Entrepreneurship", "Credits": 3},
+    {"Course Number": "CUSC-105", "Title": "Introduction to Food Science", "Credits": 3},
+    {"Course Number": "APFS-110", "Title": "Introduction to Food Systems", "Credits": 1.5},
+    {"Course Number": "APFS-150", "Title": "Introduction to Gastronomy", "Credits": 1.5},
+    {"Course Number": "HOSP-210", "Title": "Introduction to Hospitality and Customer Service", "Credits": 1.5},
+    {"Course Number": "HMFB-210", "Title": "Introduction to Service and Beverage", "Credits": 3},
+    {"Course Number": "MTSC-200", "Title": "Introduction to Statistics", "Credits": 3},
+    {"Course Number": "MGMT-100", "Title": "Introduction to the Hospitality Industry", "Credits": 1.5},
+    {"Course Number": "HOSP-300", "Title": "Introduction to Wine Studies", "Credits": 1.5},
+    {"Course Number": "BPSE-441", "Title": "Japan As Inspiration", "Credits": 3},
+    {"Course Number": "LART-340", "Title": "Japanese Culture and History", "Credits": 3},
+    {"Course Number": "LART-260", "Title": "Justice, Ethical Leadership & Truth", "Credits": 3},
+    {"Course Number": "HSBV-375", "Title": "La Sommelierie: Developing and Delivering a Professional Beverage Program", "Credits": 3},
+    {"Course Number": "BPSE-420", "Title": "Latin Cuisines: Mexico, Central America, and the Caribbean", "Credits": 3},
+    {"Course Number": "BPSE-421", "Title": "Latin Cuisines: South America", "Credits": 3},
+    {"Course Number": "LART-336", "Title": "Latinx in the United States", "Credits": 3},
+    {"Course Number": "MGMT-410", "Title": "Leadership and Ethics", "Credits": 3},
+    {"Course Number": "MSFS-570", "Title": "Leadership, Engagement, and Impact", "Credits": 3},
+    {"Course Number": "BPSE-288.1", "Title": "Leadership: Fads, Fables, Foundations", "Credits": 3},
+    {"Course Number": "MFBS-540", "Title": "Legal Strategies and Challenges for the Restaurateur", "Credits": 3},
+    {"Course Number": "LITC-200", "Title": "Literature and Composition", "Credits": 3},
+    {"Course Number": "MSFS-510", "Title": "Local, Regional, and Global Food Systems", "Credits": 2},
+    {"Course Number": "MSFS-590", "Title": "Making Change in the Food System: Leadership Perspectives", "Credits": 2},
+    {"Course Number": "MGMT-225", "Title": "Managerial Accounting", "Credits": 3},
+    {"Course Number": "MGMT-321", "Title": "Managing Technology in the Hospitality Industry", "Credits": 3},
+    {"Course Number": "HMHC-320", "Title": "Managing Technology in the Hospitality Industry", "Credits": 3},
+    {"Course Number": "MFBS-565", "Title": "Manufacturing, Co-Packing, Supply Chain, and Legal Contracts", "Credits": 3},
+    {"Course Number": "MFBS-560", "Title": "Marketing and Brand Strategies for the Restaurateur", "Credits": 3},
+    {"Course Number": "MGMT-205", "Title": "Marketing Principles", "Credits": 3},
+    {"Course Number": "MTSC-100", "Title": "Mathematical Foundations", "Credits": 1.5},
+    {"Course Number": "MATH-111", "Title": "Mathematics", "Credits": 1.5},
+    {"Course Number": "CULS-115", "Title": "Meat Identification, Fabrication, and Utilization", "Credits": 1.5},
+    {"Course Number": "HIST-220", "Title": "Medieval to Age of Revolution", "Credits": 3},
+    {"Course Number": "LART-345", "Title": "Mediterranean Food Studies", "Credits": 3},
+    {"Course Number": "BUSM-242", "Title": "Menu Development", "Credits": 1.5},
+    {"Course Number": "CUSC-350", "Title": "Microbial Ecology of Food Systems", "Credits": 3},
+    {"Course Number": "CUSC-425", "Title": "Modern and Industrial Cooking Tools, Techniques, and Ingredients", "Credits": 3},
+    {"Course Number": "CULA-260", "Title": "Modern Banquet Cookery", "Credits": 3},
+    {"Course Number": "ACBP-452", "Title": "Modern Entremets, Pastries, and Petit Fours", "Credits": 3},
+    {"Course Number": "ADVS-300", "Title": "Navigating Degree Completion", "Credits": 0.5},
+    {"Course Number": "ADWN-502", "Title": "Northern Wine Countries of Europe: The Wines of France, Germany, Austria, Switzerland, and Hungary", "Credits": 3},
+    {"Course Number": "CULP-135", "Title": "Non-Commercial Foodservice and High-Volume Production", "Credits": 3},
+    {"Course Number": "ADWN-503", "Title": "Old World Wines: Southern and Eastern Europe", "Credits": 3},
+    {"Course Number": "MGMT-390", "Title": "Organizational Behavior", "Credits": 3},
+    {"Course Number": "HIST-215", "Title": "Origins to Empires", "Credits": 3},
+    {"Course Number": "ACBP-451", "Title": "Pastry Concepts and Design", "Credits": 3},
+    {"Course Number": "MGMT-375", "Title": "Personal Finance", "Credits": 3},
+    {"Course Number": "EXTN-200", "Title": "Preparing for Externship", "Credits": 0},
+    {"Course Number": "MFBS-501C", "Title": "Presentation of Capstone Project", "Credits": 1},
+    {"Course Number": "MSFS-501C", "Title": "Presentation of Capstone Project Food Systems", "Credits": 1},
+    {"Course Number": "BAKE-200", "Title": "Principles of Design", "Credits": 1.5},
+    {"Course Number": "SOCS-100", "Title": "Principles of Microeconomics", "Credits": 3},
+    {"Course Number": "MGMT-250", "Title": "Principles of Menus and Managing Profitability in Foodservice Operations", "Credits": 3},
+    {"Course Number": "SOCS-105", "Title": "Principles of Macroeconomics", "Credits": 3},
+    {"Course Number": "PRAC-205", "Title": "Professional Baking Practicum", "Credits": 0},
+    {"Course Number": "PRAC-200", "Title": "Professional Culinary Practicum", "Credits": 0},
+    {"Course Number": "FRSH-100", "Title": "Professionalism and Life Skills", "Credits": 1.5},
+    {"Course Number": "APFS-400", "Title": "Project in Applied Food Studies", "Credits": 3},
+    {"Course Number": "FBLS-400", "Title": "Project in Food Business Leadership I", "Credits": 3},
+    {"Course Number": "FBLS-401", "Title": "Project in Food Business Leadership II", "Credits": 3},
+    {"Course Number": "SOCS-110", "Title": "Psychology of Human Behavior", "Credits": 3},
+    {"Course Number": "LART-101", "Title": "Public Speaking", "Credits": 3},
+    {"Course Number": "MSFS-520", "Title": "Race, Class, and Justice From the Field To the Table", "Credits": 3},
+    {"Course Number": "MFBS-570", "Title": "Real Estate, Capitalization, and Partnership Strategies", "Credits": 3},
+    {"Course Number": "BPSE-426", "Title": "Regional Northern Italian Cuisine", "Credits": 3},
+    {"Course Number": "LART-355", "Title": "Research Methods", "Credits": 3},
+    {"Course Number": "LART-355A", "Title": "Research Methods for Applied Food Studies", "Credits": 3},
+    {"Course Number": "CUSC-325", "Title": "Research Methods: Scientific Evaluation of Traditional Cooking Techniques", "Credits": 3},
+    {"Course Number": "MCUL-501C", "Title": "Residency III: Presentation of Capstone Project", "Credits": 1},
+    {"Course Number": "MFBS-501A", "Title": "Residency One: Orientation and Cohort Formation", "Credits": 1},
+    {"Course Number": "MCTH-501A", "Title": "Residency One: Orientation and Cohort Formation - Culinary Skills Validation", "Credits": 1},
+    {"Course Number": "MWBM-501C", "Title": "Residency Three--Presentation Of Capstone Project", "Credits": 1},
+    {"Course Number": "MCTH-501C", "Title": "Residency Three: Capstone Presentation", "Credits": 1},
+    {"Course Number": "MFBS-501B", "Title": "Residency Two: Framing of Capstone Project", "Credits": 1},
+    {"Course Number": "MCTH-501B", "Title": "Residency Two: Theory and Applications in Healthy Diet Preparation", "Credits": 1},
+    {"Course Number": "BAKE-300", "Title": "Restaurant and Production Desserts", "Credits": 3},
+    {"Course Number": "MCUL-502A1", "Title": "Restaurant Internship Experience 1.1", "Credits": 1.5},
+    {"Course Number": "MCUL-502A2", "Title": "Restaurant Internship Experience 1.2", "Credits": 1.5},
+    {"Course Number": "MCUL-502B1", "Title": "Restaurant Internship Experience 2.1", "Credits": 1.5},
+    {"Course Number": "MCUL-502B2", "Title": "Restaurant Internship Experience 2.2", "Credits": 1.5},
+    {"Course Number": "MCUL-502A", "Title": "Restaurant Internship Experience I", "Credits": 3},
+    {"Course Number": "MCUL-502B", "Title": "Restaurant Internship Experience II", "Credits": 3},
+    {"Course Number": "MFBS-550", "Title": "Restaurant Operations and Management Strategies", "Credits": 3},
+    {"Course Number": "HOSP-201", "Title": "Restaurant Operations: Baking and Pastry", "Credits": 3},
+    {"Course Number": "BPSE-340", "Title": "Retail Bakery Operations", "Credits": 3},
+    {"Course Number": "MFBS-575", "Title": "Sales, Marketing, Distribution", "Credits": 3},
+    {"Course Number": "MTSC-115", "Title": "Science Fundamentals", "Credits": 3},
+    {"Course Number": "CUSC-120", "Title": "Science of Food", "Credits": 3},
+    {"Course Number": "BPSE-400", "Title": "Science of Nutrition", "Credits": 3},
+    {"Course Number": "MCTH-500", "Title": "Scientific Foundations of Human Health And Wellness for Culinarians", "Credits": 3},
+    {"Course Number": "CULS-116", "Title": "Seafood Identification and Fabrication", "Credits": 1.5},
+    {"Course Number": "CUSC-450", "Title": "Senior Thesis: Culinary Science Research Projects", "Credits": 3},
+    {"Course Number": "CUSC-105A", "Title": "Servsafe Exam", "Credits": 0},
+    {"Course Number": "CUSC-100A", "Title": "ServSafe Exam", "Credits": 0},
+    {"Course Number": "LART-360", "Title": "Shakespeare: Play and Performance", "Credits": 3},
+    {"Course Number": "SOCS-115", "Title": "Social Psychology", "Credits": 3},
+    {"Course Number": "BAKE-202", "Title": "Specialty Breads", "Credits": 3},
+    {"Course Number": "HSBV-300", "Title": "Spirits and Principles of Mixology", "Credits": 3},
+    {"Course Number": "MWBM-550", "Title": "Spirits, Beverages, and Non-Alcoholic Beverages", "Credits": 3},
+    {"Course Number": "MGMT-355", "Title": "Strategic Management in the Business Environment", "Credits": 3},
+    {"Course Number": "HMHC-490", "Title": "Strategic Management in the Hospitality Industry", "Credits": 3},
+    {"Course Number": "MCTH-550", "Title": "Strategies for Therapeutic Meal Planning and Preparation", "Credits": 3},
+    {"Course Number": "MTSC-105", "Title": "Survey of Mathematics", "Credits": 3},
+    {"Course Number": "MSFS-500", "Title": "Sustainability and Climate Change", "Credits": 2},
+    {"Course Number": "MSFS-530", "Title": "Sustainable Agriculture", "Credits": 3},
+    {"Course Number": "MSFS-540", "Title": "Sustainable Diets and Public Health", "Credits": 3},
+    {"Course Number": "BPSE-351", "Title": "Sustainable Food Systems", "Credits": 3},
+    {"Course Number": "LART-339", "Title": "Sustainable Pastry and Local Foodways", "Credits": 3},
+    {"Course Number": "LART-388.1", "Title": "Sustainable Pastry and Local Foodways of Northern California", "Credits": 3},
+    {"Course Number": "MSFS-505", "Title": "Systems Thinking Seminar", "Credits": 1},
+    {"Course Number": "MCTH-510", "Title": "Taste, Palate, and Sensory Perception Wellness for Culinarians", "Credits": 3},
+    {"Course Number": "MWBM-501B", "Title": "Tastings, Forum, and Framing of Capstone Project", "Credits": 1},
+    {"Course Number": "BPSE-431", "Title": "The African American World of Latin America and the Caribbean: Survival and Creativity", "Credits": 3},
+    {"Course Number": "BPSE-430", "Title": "The African American World of the United States: Survival and Creativity", "Credits": 3},
+    {"Course Number": "SOCS-205", "Title": "The Archaeology of Food", "Credits": 3},
+    {"Course Number": "MCUL-540", "Title": "The Art and Contributions of Great Wine and Cuisine", "Credits": 3},
+    {"Course Number": "MGMT-412", "Title": "The Business of Craft", "Credits": 3},
+    {"Course Number": "MCUL-500", "Title": "The History and Culture of Cuisine and Restaurants", "Credits": 3},
+    {"Course Number": "HIST-225", "Title": "The Modern World", "Credits": 3},
+    {"Course Number": "MWBM-510", "Title": "The New World--Northern Hemisphere", "Credits": 3},
+    {"Course Number": "MWBM-530", "Title": "The New World--Southern Hemisphere", "Credits": 3},
+    {"Course Number": "MWBM-540", "Title": "The Old World--Northern Wine Countries of Europe", "Credits": 3},
+    {"Course Number": "MWBM-560", "Title": "The Old World--Southern and Eastern Europe", "Credits": 3},
+    {"Course Number": "MFBS-510", "Title": "The Science of Food Systems", "Credits": 3},
+    {"Course Number": "ADWN-508", "Title": "The Wines of the New World: Northern Hemisphere", "Credits": 3},
+    {"Course Number": "LART-405", "Title": "Traditional Foodways, Culinary Customs, and Ingredients of Asia", "Credits": 3},
+    {"Course Number": "BPSE-425", "Title": "Transcultural Studies", "Credits": 0},
+    {"Course Number": "ADWN-500", "Title": "Viniculture and Viticulture", "Credits": 3},
+    {"Course Number": "MWBM-501A", "Title": "Viticulture, Viniculture, Orientation, and Cohort Formation", "Credits": 2},
+    {"Course Number": "HOSP-355", "Title": "Wine and Beverage Studies", "Credits": 1.5},
+    {"Course Number": "HOSP-305", "Title": "Wine Studies", "Credits": 3},
+    {"Course Number": "HSBV-404", "Title": "Wines of the World", "Credits": 3},
+    {"Course Number": "MGMT-406", "Title": "Women in Leadership", "Credits": 3},
+    {"Course Number": "LART-300", "Title": "World Cultures and Cuisines", "Credits": 3},
+]
+
+# 加载SentenceTransformer模型
+# 2. 修改加载模型的那一行，明确指定 device='cpu'
+print("正在强制使用 CPU 初始化语义引擎...")
+model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+
+# 定义分类"锚点"描述
+category_definitions = {
+    'Core Technical Foundation': "Fundamental cooking skills, basic baking techniques, food safety, ingredient fabrication, introductory culinary practice.",
+    'AI-Augmented & Applied': "Food science technology, precision cooking, automation, digital hospitality tools, data-driven nutrition, culinary research and development.",
+    'High-Order Human Value': "Culinary ethics, leadership, global food cultures, sensory perception, food history, social justice, artistic design, storytelling.",
+    'Cross-disciplinary & Elasticity': "Food business management, entrepreneurship, marketing, legal strategies, tourism, professional writing, event planning, hospitality finance."
+}
+
+# 预计算分类锚点的向量
+cat_names = list(category_definitions.keys())
+cat_descs = list(category_definitions.values())
+cat_embeddings = model.encode(cat_descs)
+
+def batch_classify_and_analyze(data):
+    titles = [course['Title'] for course in data]
+    
+    print(f"正在对 {len(titles)} 门课程进行语义向量化...")
+    # 批量编码以提高效率
+    course_embeddings = model.encode(titles, show_progress_bar=True)
+    
+    # 计算余弦相似度矩阵 (课程 x 类别)
+    # cdist 返回距离，1 - distance = similarity
+    distances = cdist(course_embeddings, cat_embeddings, metric='cosine')
+    similarities = 1 - distances
+    
+    # 计算 AI 敏感度 (通过与 "Automation and AI" 的语义距离)
+    ai_anchor = model.encode(["Automation, digital technology, and artificial intelligence in industry"])
+    ai_scores = 1 - cdist(course_embeddings, ai_anchor, metric='cosine').flatten()
+    
+    classified_data = []
+    for i, course in enumerate(data):
+        # 找到最高分对应的索引
+        best_idx = np.argmax(similarities[i])
+        category = cat_names[best_idx]
+        
+        # 针对特定前缀的硬规则微调 (增强准确性)
+        c_num = course['Course Number'].upper()
+        if any(p in c_num for p in ['MGMT', 'BUSM', 'FBLS']):
+            category = 'Cross-disciplinary & Elasticity'
+        elif any(p in c_num for p in ['CULS', 'BAKE']) and "ADVANCED" not in course['Title'].upper():
+            # 基础课程归为底座
+            if similarities[i][best_idx] < 0.5: # 如果语义不够强，强制回归底座
+                category = 'Core Technical Foundation'
+
+        classified_data.append({
+            'Course Number': course['Course Number'],
+            'Title': course['Title'],
+            'Credits': float(course['Credits']),
+            'Category': category,
+            'Confidence': round(float(similarities[i][best_idx]), 3),
+            'AI_Sensitivity': round(float(ai_scores[i]), 3)
+        })
+        
+    return classified_data
+
+# 执行分类
+results = batch_classify_and_analyze(courses_data)
+df = pd.DataFrame(results)
+
+# 统计结果
+stats = df.groupby('Category')['Credits'].sum().reset_index()
+stats.columns = ['Category', 'Total Credits']
+
+# 输出统计
+print("\n" + "="*30)
+print("CIA 课程分类统计结果:")
+print(stats)
+print("="*30)
+
+# 保存文件
+df.to_csv("cia_courses_semantic_classified.csv", index=False, encoding='utf-8-sig')
+print("\n详细分类结果已保存至: cia_courses_semantic_classified.csv")

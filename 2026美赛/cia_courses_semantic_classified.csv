@@ -1,0 +1,340 @@
+﻿Course Number,Title,Credits,Category,Confidence,AI_Sensitivity
+LART-400,A Sense of Place: Critical Perspectives on the California Wine Industry,3.0,High-Order Human Value,0.319,0.178
+BAKE-251,Advanced Baking Principles,3.0,Core Technical Foundation,0.64,0.067
+MWBM-520,Advanced Beverage Management,3.0,AI-Augmented & Applied,0.378,0.193
+ADVP-302,Advanced Bread Baking,3.0,Core Technical Foundation,0.461,0.055
+CUSC-420,Advanced Concepts in Precision Temperature Cooking,3.0,Core Technical Foundation,0.545,0.078
+ADVC-301,Advanced Cooking,3.0,Core Technical Foundation,0.642,0.195
+ADVC-301AN,Advanced Cooking: Africa the Matrix,3.0,Core Technical Foundation,0.528,0.112
+ADVC-301AD,Advanced Cooking: Afro-Caribbean,3.0,Core Technical Foundation,0.505,0.09
+ADVC-301A,Advanced Cooking: Asian,3.0,Core Technical Foundation,0.564,0.107
+ADVC-301M,Advanced Cooking: Cuisine of the Northern Mediterranean,3.0,High-Order Human Value,0.474,0.081
+ADVC-301F,Advanced Cooking: Farm to Table,3.0,AI-Augmented & Applied,0.531,0.159
+ADVC-301L,Advanced Cooking: Latin,3.0,AI-Augmented & Applied,0.524,0.137
+MGMT-337,Advanced Food Service Operations,3.0,Cross-disciplinary & Elasticity,0.591,0.242
+ADVC-305,Advanced Japanese Cuisine (Kaiseki),3.0,Core Technical Foundation,0.436,0.078
+ADVP-301,Advanced Pastry,3.0,Core Technical Foundation,0.449,0.115
+HSBV-380,Advanced Principles of Service Management in Hospitality,3.0,Cross-disciplinary & Elasticity,0.441,0.161
+LART-337,African American Chefs and Southern Food,3.0,High-Order Human Value,0.555,0.067
+LART-335,Ancient Foods in a Modern World: Latin American Crops in the Global Arena,3.0,High-Order Human Value,0.478,0.008
+SOCS-200,Anthropology of Food,3.0,High-Order Human Value,0.601,0.042
+BAKE-260,Applied Baking and Pastry Production,3.0,Core Technical Foundation,0.525,0.145
+HMCE-492,Applied Culinary Tourism,3.0,High-Order Human Value,0.57,0.082
+APFS-200,Applied Food Studies,3.0,AI-Augmented & Applied,0.516,-0.017
+MSFS-581,Applied Project in Food Systems and Sustainability,2.0,AI-Augmented & Applied,0.475,0.127
+HSBV-365,Art and Science of Brewing,3.0,AI-Augmented & Applied,0.335,0.185
+BPSE-423,Asian Cuisine I,3.0,High-Order Human Value,0.405,0.065
+BPSE-424,Asian Cuisine II,3.0,High-Order Human Value,0.407,0.056
+CULA-350,Back of House Restaurant Operations,6.0,AI-Augmented & Applied,0.338,0.168
+CULA-350A,Back of House Restaurant Operations - American Bounty,6.0,High-Order Human Value,0.25,0.027
+CULA-350B,Back of House Restaurant Operations - Bocuse,6.0,High-Order Human Value,0.287,0.144
+CULA-350C,Back of House Restaurant Operations - Caterina,6.0,AI-Augmented & Applied,0.369,0.137
+CULA-350P,Back of House Restaurant Operations - Post Rd Brewhouse,6.0,AI-Augmented & Applied,0.266,0.108
+BAKE-151,Baking and Pastry Practical Examination I,0.0,Core Technical Foundation,0.602,0.092
+BAKE-230,Baking and Pastry Practical Examination II,0.0,Core Technical Foundation,0.603,0.083
+BAKE-241,Baking and Pastry Skill Development,3.0,Core Technical Foundation,0.644,0.143
+BAKE-105,Baking and Pastry Techniques,6.0,Core Technical Foundation,0.55,0.059
+BAKE-110,Baking Ingredients and Equipment Technology,1.5,Core Technical Foundation,0.56,0.219
+BAKE-205,Basic and Classical Cakes,3.0,Core Technical Foundation,0.487,0.083
+BPSE-440,Basic Japanese Cuisine,3.0,Core Technical Foundation,0.443,0.062
+HSBV-340,"Beer and Fermented Beverages: History, Cultures, and Styles",3.0,High-Order Human Value,0.34,-0.007
+HSBV-305,Beverage Operations Management,3.0,AI-Augmented & Applied,0.348,0.249
+BAKE-255,Beverages and Customer Service,3.0,Core Technical Foundation,0.292,0.166
+APFS-305,Building Sustainable Food Communities,3.0,High-Order Human Value,0.522,0.042
+MGMT-314,Business Communication,3.0,Cross-disciplinary & Elasticity,0.334,0.257
+MFBS-500,Business Fundamentals,3.0,Cross-disciplinary & Elasticity,0.417,0.328
+MGMT-407,Business Planning,3.0,Cross-disciplinary & Elasticity,0.47,0.267
+BAKE-254,Café Operations,3.0,Core Technical Foundation,0.353,0.203
+BAKE-115,Café Savory Foods Production,1.5,Core Technical Foundation,0.463,0.057
+MTSC-205,Calculus I,3.0,AI-Augmented & Applied,0.125,0.156
+BPSE-407,Chef-Community Relations,3.0,High-Order Human Value,0.509,0.151
+BAKE-242,Chocolate and Confectionery Technology and Techniques,3.0,Core Technical Foundation,0.367,0.106
+MCUL-501A,"Cohort Formation, Culinary Arts MPS",1.0,High-Order Human Value,0.498,0.103
+MTSC-110,College Algebra,3.0,High-Order Human Value,0.061,0.107
+LITC-100,College Writing,3.0,Cross-disciplinary & Elasticity,0.251,0.063
+LITC-105,College Writing II,3.0,Cross-disciplinary & Elasticity,0.217,0.054
+BPSE-450AN,Concentration Capstone: African Cuisine,3.0,High-Order Human Value,0.442,-0.01
+BPSE-450A,Concentration Capstone: Asian Cuisine,3.0,High-Order Human Value,0.406,0.002
+BPSE-450J,Concentration Capstone: Japanese,3.0,High-Order Human Value,0.126,-0.017
+BPSE-450L,Concentration Capstone: Latin Cuisine,3.0,High-Order Human Value,0.454,0.017
+BPSE-450M,Concentration Capstone: Mediterranean,3.0,High-Order Human Value,0.131,-0.017
+MFBS-545,"Concept Building, Proving, Prototyping",3.0,AI-Augmented & Applied,0.244,0.308
+BAKE-240,Confectionery Art and Special Occasion Cakes,3.0,Core Technical Foundation,0.415,0.085
+MGMT-350,Consumer Behavior,3.0,Cross-disciplinary & Elasticity,0.284,0.192
+BAKE-245,Contemporary Cakes and Desserts,3.0,Core Technical Foundation,0.403,0.087
+HOSP-310,Contemporary Hospitality and Service Management,3.0,Cross-disciplinary & Elasticity,0.471,0.156
+CULA-310,Contemporary Restaurant Cooking,3.0,AI-Augmented & Applied,0.534,0.073
+CULS-125,Contemporary Topics in Culinary Arts,3.0,High-Order Human Value,0.638,0.14
+HMFB-420,Contemporary Topics in Food and Beverage,3.0,High-Order Human Value,0.54,0.109
+MGMT-425,Contemporary Topics in Food and Beverage,3.0,Cross-disciplinary & Elasticity,0.54,0.109
+HMHC-389.2,Convention Planning and Execution,2.0,Cross-disciplinary & Elasticity,0.169,0.143
+LART-338,Cooking and Tasting Local Sustainable Foodways,3.0,High-Order Human Value,0.515,0.029
+ACBP-450,Creative Artisanal Chocolates,3.0,High-Order Human Value,0.342,0.117
+BPSE-429,Cuisine of the Iberian Peninsula,3.0,High-Order Human Value,0.413,0.032
+BPSE-428,Cuisine of the Southern Mediterranean,3.0,High-Order Human Value,0.419,0.036
+CULP-321,Cuisines and Cultures of Asia,3.0,High-Order Human Value,0.542,0.04
+CULP-301,Cuisines and Cultures of the Americas,3.0,High-Order Human Value,0.614,-0.001
+CULP-311,Cuisines and Cultures of the Mediterranean,3.0,High-Order Human Value,0.505,0.055
+CULP-320,Cuisines of Asia,2.0,High-Order Human Value,0.518,0.062
+CULP-300,Cuisines of the Americas,2.0,High-Order Human Value,0.627,0.011
+CULP-310,Cuisines of the Mediterranean,2.0,High-Order Human Value,0.481,0.053
+CUSC-310,Culinary Chemistry,3.0,AI-Augmented & Applied,0.535,0.07
+CULS-100,Culinary Fundamentals,6.0,Core Technical Foundation,0.681,0.14
+CULS-120,Culinary Immersion Tech & Theory,3.0,AI-Augmented & Applied,0.62,0.201
+CULS-189.1,Culinary Immersion Techniques and Theory For the Hospitality Industry,6.0,Core Technical Foundation,0.555,0.09
+CULS-110,Culinary Immersion Techniques and Theory For the Hospitality Industry,6.0,Core Technical Foundation,0.555,0.09
+CULS-151,Culinary Practical Examination I (Cooking Practical),0.0,Core Technical Foundation,0.624,0.054
+CULS-152,Culinary Practical Examination I (Written Exam),0.0,Core Technical Foundation,0.534,0.039
+CULS-251,Culinary Practical Examination II,0.0,Core Technical Foundation,0.544,0.035
+CUSC-410,Culinary Research and Development,3.0,AI-Augmented & Applied,0.677,0.098
+CUSC-200,Culinary Science: Principles and Applications,3.0,AI-Augmented & Applied,0.667,0.115
+MSFS-550,Culinary Strategy and Food System Innovation,3.0,AI-Augmented & Applied,0.646,0.158
+MCTH-530,Culinary Techniques and Their Impact on Health and Wellness,3.0,AI-Augmented & Applied,0.586,0.043
+HMCE-302,Culinary Tourism I,3.0,High-Order Human Value,0.583,0.121
+HMCE-322,Culinary Tourism II,3.0,High-Order Human Value,0.547,0.096
+MCTH-570,Cultivating Healthy and Mindful Lifestyles,3.0,High-Order Human Value,0.289,0.079
+MGMT-351,Current Issues in Hospitality Technology,3.0,Cross-disciplinary & Elasticity,0.386,0.234
+MFBS-520,Design Thinking for Food,3.0,High-Order Human Value,0.536,0.086
+MFBS-555,"Differentiation, Branding, and Packaging",3.0,High-Order Human Value,0.267,0.126
+ADWN-509,Distilled Spirits and Introduction to Mixology,3.0,High-Order Human Value,0.203,0.037
+CUSC-315,Dynamics of Heat Transfer and Physical Properties of Food,3.0,AI-Augmented & Applied,0.328,-0.042
+APFS-320,Ecology of Food,3.0,High-Order Human Value,0.466,0.021
+FREN-101,Elementary French I,3.0,High-Order Human Value,0.128,0.033
+FREN-102,Elementary French II,3.0,High-Order Human Value,0.124,0.025
+ITAL-101,Elementary Italian I,3.0,High-Order Human Value,0.087,0.083
+ITAL-102,Elementary Italian II,3.0,High-Order Human Value,0.092,0.075
+SPAN-101,Elementary Spanish I,3.0,High-Order Human Value,0.087,0.06
+SPAN-102,Elementary Spanish II,3.0,High-Order Human Value,0.101,0.043
+MWBM-570,Entrepreneurial Innovation and Business for Wine and Beverage,3.0,Cross-disciplinary & Elasticity,0.425,0.276
+MFBS-530,Ethical Leadership in the Food Business,3.0,High-Order Human Value,0.568,0.101
+MGMT-389.3,Event Contract Negotiation,3.0,Cross-disciplinary & Elasticity,0.116,0.089
+HMCE-375,Event Contract Negotiation,3.0,Cross-disciplinary & Elasticity,0.116,0.089
+HMCE-301,Event Design and Project Management,3.0,Cross-disciplinary & Elasticity,0.245,0.143
+HMCE-491,Event Management Capstone,3.0,Cross-disciplinary & Elasticity,0.175,0.106
+MGMT-389.1,Event Management Software & Innovations Planning,3.0,Cross-disciplinary & Elasticity,0.272,0.208
+HMCE-325,Event Management Software and Innovations,3.0,Cross-disciplinary & Elasticity,0.216,0.189
+MGMT-331,Event Planning I,3.0,Cross-disciplinary & Elasticity,0.262,0.167
+MSFS-501A,Exploring San Francisco Bay Area Food Systems,1.0,AI-Augmented & Applied,0.458,0.098
+MSFS-501B,Exploring the Hudson Valley Food Systems,1.0,AI-Augmented & Applied,0.419,0.065
+EXTN-252,Externship,2.5,Cross-disciplinary & Elasticity,0.225,0.091
+EXTN-250,Externship,2.5,Cross-disciplinary & Elasticity,0.225,0.091
+EXTN-225,Externship (Baking & Pastry),3.0,Core Technical Foundation,0.421,0.084
+EXTN-220,Externship (Culinary Arts),3.0,High-Order Human Value,0.486,0.129
+EXTN-210,Externship Orientation,0.0,Cross-disciplinary & Elasticity,0.265,0.086
+EXTN-205,Externship Prep Seminar II,0.0,Cross-disciplinary & Elasticity,0.252,0.07
+BPSE-402,Farm to Fork: Practices of a Sustainable Table,3.0,High-Order Human Value,0.292,0.097
+LART-330,Feasting and Fasting in Latin America,3.0,High-Order Human Value,0.331,0.0
+ADWN-506,Fermented and Non-Alcoholic Beverages,3.0,High-Order Human Value,0.244,-0.003
+BPSE-409,Field Experience and Action Plan,3.0,Cross-disciplinary & Elasticity,0.278,0.187
+MGMT-255,Finance,3.0,Cross-disciplinary & Elasticity,0.309,0.269
+MGMT-115,Financial Accounting,3.0,Cross-disciplinary & Elasticity,0.296,0.149
+CUSC-320,Flavor Science and Perception,3.0,High-Order Human Value,0.376,0.128
+LART-311,Food and Cultures: France,3.0,High-Order Human Value,0.534,0.021
+LART-312,Food and Cultures: Italy,3.0,High-Order Human Value,0.505,0.09
+LART-313,Food and Cultures: Spain,3.0,High-Order Human Value,0.491,0.045
+FBLS-300,Food Business Leadership,3.0,Cross-disciplinary & Elasticity,0.566,0.103
+MFBS-580,Food Business Playbook,3.0,High-Order Human Value,0.472,0.116
+LART-352,Food for Good: Social Movements and Entrepreneurship,3.0,High-Order Human Value,0.46,0.126
+APFS-310,Food History,3.0,High-Order Human Value,0.558,-0.019
+LART-317,Food in Film,3.0,High-Order Human Value,0.438,0.089
+MFBS-542,Food Industry Organizational Management,3.0,AI-Augmented & Applied,0.552,0.255
+MSFS-560,Food Movement Voices: How to Create Change,3.0,High-Order Human Value,0.51,0.078
+BPSE-306,Food Photography & Food Styling,3.0,AI-Augmented & Applied,0.542,0.009
+APFS-420,Food Policy,3.0,High-Order Human Value,0.451,0.036
+CUSC-100,Food Safety,1.5,Core Technical Foundation,0.412,0.021
+LART-320,Food Writing,3.0,High-Order Human Value,0.545,0.055
+MGMT-450,Foodservice Management,3.0,Cross-disciplinary & Elasticity,0.43,0.11
+MGMT-325,Foodservice Technology,3.0,Cross-disciplinary & Elasticity,0.561,0.186
+HOSP-320,Formal Hospitality and Service Management,3.0,Cross-disciplinary & Elasticity,0.465,0.202
+CULA-320,Formal Restaurant Cooking,3.0,Core Technical Foundation,0.521,0.133
+HMFB-110,Foundations of Hospitality Management,3.0,Cross-disciplinary & Elasticity,0.54,0.138
+CULP-225,Garde Manger,3.0,High-Order Human Value,0.112,0.01
+APFS-155,Gastronomy,3.0,AI-Augmented & Applied,0.285,0.093
+CULP-325,Global Cuisines,3.0,High-Order Human Value,0.622,0.062
+LART-215,Global Cuisines & Cult: China,3.0,High-Order Human Value,0.601,0.061
+LART-205,Global Cuisines & Cult: France,3.0,High-Order Human Value,0.581,0.03
+LART-225,Global Cuisines & Cultures: Costa Rica,3.0,High-Order Human Value,0.511,0.027
+LART-240,Global Cuisines and Cultures: Greece,3.0,High-Order Human Value,0.555,0.084
+LART-200,Global Cuisines and Cultures: Italy,3.0,High-Order Human Value,0.555,0.105
+LART-220,Global Cuisines and Cultures: Peru,3.0,High-Order Human Value,0.503,0.079
+LART-210,Global Cuisines and Cultures: Spain,3.0,High-Order Human Value,0.545,0.054
+BPSE-230,Global Cuisines and Cultures: U.S. Northern California,3.0,High-Order Human Value,0.575,0.031
+HMCE-321,Global Event Management (Event Planning II),3.0,Cross-disciplinary & Elasticity,0.276,0.114
+MGMT-389.2,Global Events,3.0,Cross-disciplinary & Elasticity,0.2,0.12
+MWBM-500,Global Wine Business Operations,3.0,Cross-disciplinary & Elasticity,0.377,0.22
+ADWN-507,Global Wine Business Operations,3.0,Cross-disciplinary & Elasticity,0.377,0.22
+LART-250,Globalization in Historic and Contemporary Contexts,3.0,High-Order Human Value,0.278,0.119
+MCUL-580,Graduate Seminar and Capstone Project,3.0,Cross-disciplinary & Elasticity,0.227,0.131
+MWBM-580,Graduate Seminar and Capstone Project,2.0,Cross-disciplinary & Elasticity,0.227,0.131
+MCTH-580,Graduate Seminar and Capstone Project,3.0,Cross-disciplinary & Elasticity,0.227,0.131
+ADWN-510,Graduate Seminar in Research and Writing,3.0,Cross-disciplinary & Elasticity,0.239,0.022
+ADWN-511,"Graduate Seminar: Research, Scholarly Writing, Business Project, Part 1",1.5,Cross-disciplinary & Elasticity,0.399,0.081
+ADWN-512,"Graduate Seminar: Research, Scholarly Writing, Business Project, Part 2",1.5,Cross-disciplinary & Elasticity,0.4,0.078
+MCTH-560,Health and Wellness Systems Integration,3.0,AI-Augmented & Applied,0.289,0.172
+BAKE-210,Hearth Breads and Rolls,3.0,Core Technical Foundation,0.319,-0.027
+CULP-130,High-Volume Production Cookery,3.0,Core Technical Foundation,0.351,0.108
+HIST-200,History and Cultures of Asia,3.0,High-Order Human Value,0.296,0.015
+HIST-205,History and Cultures of Europe,3.0,High-Order Human Value,0.319,0.042
+HIST-210,History and Cultures of the Americas,3.0,High-Order Human Value,0.356,-0.023
+LART-255,History of Africa,3.0,High-Order Human Value,0.242,0.028
+HMFB-200,Hospitality Internship Orientation,0.0,Cross-disciplinary & Elasticity,0.43,0.09
+HMMS-425,Hospitality Labor Relations,3.0,Cross-disciplinary & Elasticity,0.44,0.188
+MGMT-309,Hospitality Law,3.0,Cross-disciplinary & Elasticity,0.368,0.068
+HMHC-310,Hospitality Law,3.0,Cross-disciplinary & Elasticity,0.368,0.068
+HMFB-300,Hospitality Management Internship,3.0,Cross-disciplinary & Elasticity,0.457,0.106
+HMHC-315,Hospitality Operations Management,3.0,Cross-disciplinary & Elasticity,0.53,0.245
+HMFB-115,Hospitality Supply Chain Management and Procurement,3.0,Cross-disciplinary & Elasticity,0.448,0.164
+MFBS-562,"Hospitality, Branding, and Marketing Strategies",3.0,Cross-disciplinary & Elasticity,0.594,0.128
+HOSP-350,"Hospitality, Service, and Restaurant Management",6.0,Cross-disciplinary & Elasticity,0.658,0.252
+HOSP-350A,"Hospitality, Service, and Restaurant Management - American Bounty",6.0,Cross-disciplinary & Elasticity,0.421,0.042
+HOSP-350B,"Hospitality, Service, and Restaurant Management - Bocuse",6.0,Cross-disciplinary & Elasticity,0.629,0.215
+HOSP-350C,"Hospitality, Service, and Restaurant Management - Caterina",6.0,Cross-disciplinary & Elasticity,0.582,0.187
+HOSP-350P,"Hospitality, Service, and Restaurant Management - Post Rd Brewhouse",6.0,Cross-disciplinary & Elasticity,0.425,0.15
+MGMT-210,Human Resource Management,3.0,Cross-disciplinary & Elasticity,0.199,0.219
+BAKE-215,Individual and Production Pastries,3.0,Core Technical Foundation,0.389,0.073
+SOCS-175,Industrial and Organizational Psychology,3.0,High-Order Human Value,0.243,0.38
+CUSC-415,"Ingredient Functionality: Texture Development, Stability, and Flavor Release",3.0,Core Technical Foundation,0.286,0.003
+CULS-105,Ingredients and Techniques of Fabrication,3.0,Core Technical Foundation,0.329,0.13
+FREN-201,Intermediate French,3.0,High-Order Human Value,0.172,0.034
+FREN-355,Intermediate French II,3.0,High-Order Human Value,0.125,0.027
+ITAL-201,Intermediate Italian,3.0,High-Order Human Value,0.148,0.09
+SPAN-201,Intermediate Spanish,3.0,High-Order Human Value,0.127,0.061
+SPAN-355,Intermediate Spanish II,3.0,High-Order Human Value,0.118,0.046
+MCUL-501B,International Perspectives on Food and Wine,1.0,High-Order Human Value,0.532,0.046
+LITC-305,Interpreting Literature,3.0,High-Order Human Value,0.226,0.11
+MGMT-445,Intraventure Planning,3.0,Cross-disciplinary & Elasticity,0.218,0.256
+CULP-115,Introduction to À La Carte Cooking,3.0,Core Technical Foundation,0.487,0.1
+MGMT-340,Introduction to Entrepreneurship,3.0,Cross-disciplinary & Elasticity,0.419,0.262
+CUSC-105,Introduction to Food Science,3.0,AI-Augmented & Applied,0.458,-0.0
+APFS-110,Introduction to Food Systems,1.5,AI-Augmented & Applied,0.451,0.094
+APFS-150,Introduction to Gastronomy,1.5,Core Technical Foundation,0.341,0.049
+HOSP-210,Introduction to Hospitality and Customer Service,1.5,Cross-disciplinary & Elasticity,0.428,0.143
+HMFB-210,Introduction to Service and Beverage,3.0,High-Order Human Value,0.347,0.15
+MTSC-200,Introduction to Statistics,3.0,AI-Augmented & Applied,0.102,0.21
+MGMT-100,Introduction to the Hospitality Industry,1.5,Cross-disciplinary & Elasticity,0.546,0.214
+HOSP-300,Introduction to Wine Studies,1.5,High-Order Human Value,0.289,0.076
+BPSE-441,Japan As Inspiration,3.0,High-Order Human Value,0.311,0.127
+LART-340,Japanese Culture and History,3.0,High-Order Human Value,0.289,0.035
+LART-260,"Justice, Ethical Leadership & Truth",3.0,High-Order Human Value,0.33,0.123
+HSBV-375,La Sommelierie: Developing and Delivering a Professional Beverage Program,3.0,High-Order Human Value,0.361,0.095
+BPSE-420,"Latin Cuisines: Mexico, Central America, and the Caribbean",3.0,High-Order Human Value,0.535,0.112
+BPSE-421,Latin Cuisines: South America,3.0,High-Order Human Value,0.491,0.059
+LART-336,Latinx in the United States,3.0,High-Order Human Value,0.161,0.121
+MGMT-410,Leadership and Ethics,3.0,Cross-disciplinary & Elasticity,0.36,0.153
+MSFS-570,"Leadership, Engagement, and Impact",3.0,High-Order Human Value,0.357,0.12
+BPSE-288.1,"Leadership: Fads, Fables, Foundations",3.0,High-Order Human Value,0.358,0.079
+MFBS-540,Legal Strategies and Challenges for the Restaurateur,3.0,Cross-disciplinary & Elasticity,0.33,0.111
+LITC-200,Literature and Composition,3.0,High-Order Human Value,0.313,0.141
+MSFS-510,"Local, Regional, and Global Food Systems",2.0,High-Order Human Value,0.491,0.083
+MSFS-590,Making Change in the Food System: Leadership Perspectives,2.0,High-Order Human Value,0.51,0.094
+MGMT-225,Managerial Accounting,3.0,Cross-disciplinary & Elasticity,0.333,0.173
+MGMT-321,Managing Technology in the Hospitality Industry,3.0,Cross-disciplinary & Elasticity,0.45,0.381
+HMHC-320,Managing Technology in the Hospitality Industry,3.0,Cross-disciplinary & Elasticity,0.45,0.381
+MFBS-565,"Manufacturing, Co-Packing, Supply Chain, and Legal Contracts",3.0,Cross-disciplinary & Elasticity,0.264,0.264
+MFBS-560,Marketing and Brand Strategies for the Restaurateur,3.0,High-Order Human Value,0.383,0.091
+MGMT-205,Marketing Principles,3.0,Cross-disciplinary & Elasticity,0.335,0.158
+MTSC-100,Mathematical Foundations,1.5,AI-Augmented & Applied,0.119,0.127
+MATH-111,Mathematics,1.5,AI-Augmented & Applied,0.189,0.244
+CULS-115,"Meat Identification, Fabrication, and Utilization",1.5,Core Technical Foundation,0.352,0.086
+HIST-220,Medieval to Age of Revolution,3.0,High-Order Human Value,0.17,0.075
+LART-345,Mediterranean Food Studies,3.0,High-Order Human Value,0.474,0.011
+BUSM-242,Menu Development,1.5,Cross-disciplinary & Elasticity,0.186,0.099
+CUSC-350,Microbial Ecology of Food Systems,3.0,High-Order Human Value,0.29,0.016
+CUSC-425,"Modern and Industrial Cooking Tools, Techniques, and Ingredients",3.0,Core Technical Foundation,0.556,0.11
+CULA-260,Modern Banquet Cookery,3.0,AI-Augmented & Applied,0.397,0.093
+ACBP-452,"Modern Entremets, Pastries, and Petit Fours",3.0,High-Order Human Value,0.298,-0.007
+ADVS-300,Navigating Degree Completion,0.5,Cross-disciplinary & Elasticity,0.199,0.148
+ADWN-502,"Northern Wine Countries of Europe: The Wines of France, Germany, Austria, Switzerland, and Hungary",3.0,High-Order Human Value,0.231,0.01
+CULP-135,Non-Commercial Foodservice and High-Volume Production,3.0,AI-Augmented & Applied,0.445,0.142
+ADWN-503,Old World Wines: Southern and Eastern Europe,3.0,High-Order Human Value,0.214,0.055
+MGMT-390,Organizational Behavior,3.0,Cross-disciplinary & Elasticity,0.224,0.258
+HIST-215,Origins to Empires,3.0,High-Order Human Value,0.201,0.04
+ACBP-451,Pastry Concepts and Design,3.0,Core Technical Foundation,0.492,0.075
+MGMT-375,Personal Finance,3.0,Cross-disciplinary & Elasticity,0.271,0.223
+EXTN-200,Preparing for Externship,0.0,Cross-disciplinary & Elasticity,0.279,0.06
+MFBS-501C,Presentation of Capstone Project,1.0,High-Order Human Value,0.145,0.097
+MSFS-501C,Presentation of Capstone Project Food Systems,1.0,AI-Augmented & Applied,0.429,0.082
+BAKE-200,Principles of Design,1.5,Core Technical Foundation,0.188,0.182
+SOCS-100,Principles of Microeconomics,3.0,High-Order Human Value,0.194,0.213
+MGMT-250,Principles of Menus and Managing Profitability in Foodservice Operations,3.0,Cross-disciplinary & Elasticity,0.405,0.106
+SOCS-105,Principles of Macroeconomics,3.0,Cross-disciplinary & Elasticity,0.17,0.196
+PRAC-205,Professional Baking Practicum,0.0,Core Technical Foundation,0.596,0.152
+PRAC-200,Professional Culinary Practicum,0.0,Core Technical Foundation,0.555,0.138
+FRSH-100,Professionalism and Life Skills,1.5,High-Order Human Value,0.299,0.186
+APFS-400,Project in Applied Food Studies,3.0,AI-Augmented & Applied,0.514,0.023
+FBLS-400,Project in Food Business Leadership I,3.0,Cross-disciplinary & Elasticity,0.506,0.153
+FBLS-401,Project in Food Business Leadership II,3.0,Cross-disciplinary & Elasticity,0.51,0.151
+SOCS-110,Psychology of Human Behavior,3.0,High-Order Human Value,0.165,0.151
+LART-101,Public Speaking,3.0,Cross-disciplinary & Elasticity,0.087,-0.037
+MSFS-520,"Race, Class, and Justice From the Field To the Table",3.0,High-Order Human Value,0.324,0.093
+MFBS-570,"Real Estate, Capitalization, and Partnership Strategies",3.0,Cross-disciplinary & Elasticity,0.36,0.2
+BPSE-426,Regional Northern Italian Cuisine,3.0,High-Order Human Value,0.321,0.035
+LART-355,Research Methods,3.0,AI-Augmented & Applied,0.277,0.161
+LART-355A,Research Methods for Applied Food Studies,3.0,AI-Augmented & Applied,0.486,-0.046
+CUSC-325,Research Methods: Scientific Evaluation of Traditional Cooking Techniques,3.0,Core Technical Foundation,0.56,0.026
+MCUL-501C,Residency III: Presentation of Capstone Project,1.0,High-Order Human Value,0.222,0.094
+MFBS-501A,Residency One: Orientation and Cohort Formation,1.0,Cross-disciplinary & Elasticity,0.129,0.029
+MCTH-501A,Residency One: Orientation and Cohort Formation - Culinary Skills Validation,1.0,Core Technical Foundation,0.55,0.065
+MWBM-501C,Residency Three--Presentation Of Capstone Project,1.0,High-Order Human Value,0.205,0.09
+MCTH-501C,Residency Three: Capstone Presentation,1.0,High-Order Human Value,0.183,0.025
+MFBS-501B,Residency Two: Framing of Capstone Project,1.0,High-Order Human Value,0.237,0.092
+MCTH-501B,Residency Two: Theory and Applications in Healthy Diet Preparation,1.0,Core Technical Foundation,0.337,-0.061
+BAKE-300,Restaurant and Production Desserts,3.0,AI-Augmented & Applied,0.506,0.161
+MCUL-502A1,Restaurant Internship Experience 1.1,1.5,Cross-disciplinary & Elasticity,0.426,0.088
+MCUL-502A2,Restaurant Internship Experience 1.2,1.5,Cross-disciplinary & Elasticity,0.422,0.086
+MCUL-502B1,Restaurant Internship Experience 2.1,1.5,Cross-disciplinary & Elasticity,0.418,0.086
+MCUL-502B2,Restaurant Internship Experience 2.2,1.5,Cross-disciplinary & Elasticity,0.409,0.086
+MCUL-502A,Restaurant Internship Experience I,3.0,Cross-disciplinary & Elasticity,0.435,0.105
+MCUL-502B,Restaurant Internship Experience II,3.0,Cross-disciplinary & Elasticity,0.424,0.097
+MFBS-550,Restaurant Operations and Management Strategies,3.0,Cross-disciplinary & Elasticity,0.503,0.199
+HOSP-201,Restaurant Operations: Baking and Pastry,3.0,Core Technical Foundation,0.575,0.173
+BPSE-340,Retail Bakery Operations,3.0,Core Technical Foundation,0.384,0.201
+MFBS-575,"Sales, Marketing, Distribution",3.0,Cross-disciplinary & Elasticity,0.373,0.257
+MTSC-115,Science Fundamentals,3.0,AI-Augmented & Applied,0.262,0.229
+CUSC-120,Science of Food,3.0,AI-Augmented & Applied,0.573,0.093
+BPSE-400,Science of Nutrition,3.0,AI-Augmented & Applied,0.406,0.026
+MCTH-500,Scientific Foundations of Human Health And Wellness for Culinarians,3.0,High-Order Human Value,0.216,-0.06
+CULS-116,Seafood Identification and Fabrication,1.5,Core Technical Foundation,0.253,0.103
+CUSC-450,Senior Thesis: Culinary Science Research Projects,3.0,AI-Augmented & Applied,0.636,0.1
+CUSC-105A,Servsafe Exam,0.0,Core Technical Foundation,0.135,0.01
+CUSC-100A,ServSafe Exam,0.0,Core Technical Foundation,0.135,0.01
+LART-360,Shakespeare: Play and Performance,3.0,High-Order Human Value,0.169,0.026
+SOCS-115,Social Psychology,3.0,High-Order Human Value,0.287,0.132
+BAKE-202,Specialty Breads,3.0,Core Technical Foundation,0.384,0.01
+HSBV-300,Spirits and Principles of Mixology,3.0,High-Order Human Value,0.211,0.053
+MWBM-550,"Spirits, Beverages, and Non-Alcoholic Beverages",3.0,High-Order Human Value,0.276,0.054
+MGMT-355,Strategic Management in the Business Environment,3.0,Cross-disciplinary & Elasticity,0.385,0.192
+HMHC-490,Strategic Management in the Hospitality Industry,3.0,Cross-disciplinary & Elasticity,0.552,0.182
+MCTH-550,Strategies for Therapeutic Meal Planning and Preparation,3.0,Core Technical Foundation,0.386,-0.099
+MTSC-105,Survey of Mathematics,3.0,AI-Augmented & Applied,0.055,0.118
+MSFS-500,Sustainability and Climate Change,2.0,High-Order Human Value,0.234,0.168
+MSFS-530,Sustainable Agriculture,3.0,High-Order Human Value,0.267,0.102
+MSFS-540,Sustainable Diets and Public Health,3.0,High-Order Human Value,0.302,-0.062
+BPSE-351,Sustainable Food Systems,3.0,AI-Augmented & Applied,0.46,0.067
+LART-339,Sustainable Pastry and Local Foodways,3.0,High-Order Human Value,0.405,0.022
+LART-388.1,Sustainable Pastry and Local Foodways of Northern California,3.0,AI-Augmented & Applied,0.377,0.015
+MSFS-505,Systems Thinking Seminar,1.0,AI-Augmented & Applied,0.146,0.203
+MCTH-510,"Taste, Palate, and Sensory Perception Wellness for Culinarians",3.0,High-Order Human Value,0.341,-0.021
+MWBM-501B,"Tastings, Forum, and Framing of Capstone Project",1.0,High-Order Human Value,0.386,0.104
+BPSE-431,The African American World of Latin America and the Caribbean: Survival and Creativity,3.0,High-Order Human Value,0.388,0.071
+BPSE-430,The African American World of the United States: Survival and Creativity,3.0,High-Order Human Value,0.365,0.058
+SOCS-205,The Archaeology of Food,3.0,High-Order Human Value,0.548,0.052
+MCUL-540,The Art and Contributions of Great Wine and Cuisine,3.0,High-Order Human Value,0.486,0.08
+MGMT-412,The Business of Craft,3.0,Cross-disciplinary & Elasticity,0.373,0.261
+MCUL-500,The History and Culture of Cuisine and Restaurants,3.0,High-Order Human Value,0.651,0.089
+HIST-225,The Modern World,3.0,High-Order Human Value,0.242,0.264
+MWBM-510,The New World--Northern Hemisphere,3.0,High-Order Human Value,0.197,0.028
+MWBM-530,The New World--Southern Hemisphere,3.0,High-Order Human Value,0.216,0.067
+MWBM-540,The Old World--Northern Wine Countries of Europe,3.0,High-Order Human Value,0.284,0.032
+MWBM-560,The Old World--Southern and Eastern Europe,3.0,High-Order Human Value,0.245,0.113
+MFBS-510,The Science of Food Systems,3.0,AI-Augmented & Applied,0.519,0.154
+ADWN-508,The Wines of the New World: Northern Hemisphere,3.0,High-Order Human Value,0.325,0.016
+LART-405,"Traditional Foodways, Culinary Customs, and Ingredients of Asia",3.0,High-Order Human Value,0.546,0.029
+BPSE-425,Transcultural Studies,0.0,High-Order Human Value,0.366,0.07
+ADWN-500,Viniculture and Viticulture,3.0,High-Order Human Value,0.122,0.067
+MWBM-501A,"Viticulture, Viniculture, Orientation, and Cohort Formation",2.0,High-Order Human Value,0.109,-0.027
+HOSP-355,Wine and Beverage Studies,1.5,High-Order Human Value,0.333,0.093
+HOSP-305,Wine Studies,3.0,High-Order Human Value,0.276,0.094
+HSBV-404,Wines of the World,3.0,High-Order Human Value,0.28,0.115
+MGMT-406,Women in Leadership,3.0,Cross-disciplinary & Elasticity,0.267,0.126
+LART-300,World Cultures and Cuisines,3.0,High-Order Human Value,0.662,0.062

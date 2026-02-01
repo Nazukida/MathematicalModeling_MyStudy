@@ -1,0 +1,51 @@
+{
+  "vectors": {
+    "software_engineer": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "software_neighbor": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "graphic_designer": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "graphic_neighbor": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "chef": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "chef_neighbor": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "cpe": {
+    "software_engineer_to_software_neighbor": 0.0,
+    "graphic_designer_to_graphic_neighbor": 0.0,
+    "chef_to_chef_neighbor": 0.0
+  }
+}

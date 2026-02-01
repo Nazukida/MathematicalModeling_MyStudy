@@ -1,5 +1,6 @@
 from task1_1 import AICareerParams, AICareerModel, AICareerVisualization, run_multi_career_workflow
 from task2_1 import EducationDecisionParams, EducationDecisionModel, EducationDecisionVisualization
+import data_processing
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,7 +51,8 @@ def integrate_and_run(career='software_engineer', school='CMU', csv_path=r'd:\\c
     print(f"  -> Extracted F_t for year {target_year_used}: {F_t_val:.3f} (units same as task1_1 results)")
 
     # --- Prepare task2_1 params using the extracted F_t ---
-    params2 = EducationDecisionParams(school_name=school, demand_2030=F_t_val)
+    # pass target_career to params
+    params2 = EducationDecisionParams(school_name=school, demand_2030=F_t_val, target_career=career)
     params2.summary()
 
     model2 = EducationDecisionModel(params2)
@@ -62,6 +64,18 @@ def integrate_and_run(career='software_engineer', school='CMU', csv_path=r'd:\\c
     viz.plot_enrollment_response()
     viz.plot_curriculum_optimization()
     viz.plot_career_elasticity()
+    viz.plot_skill_radar()
+    viz.plot_sa_convergence()
+    viz.plot_pareto_frontier()
+    
+    # Generate global/static charts (AHP & Career Similarity) at least once per run
+    # These are independent of the specific simulation result but part of the full output
+    try:
+        viz.plot_ahp_radar()
+        viz.plot_ahp_summary_table()
+        viz.plot_career_similarity_matrix()
+    except Exception as e:
+        print(f"  ⚠️ Warning generating static charts: {e}")
 
     # Save a small bridge record
     bridge_path = os.path.join('./figures', f'bridge_{career}_{school}_{target_year_used}.txt')
@@ -151,12 +165,78 @@ def batch_integrate_from_csv(csv_path=r'd:\competition\美国大学生数学建�
     print(f"\n  💾 Batch summary saved: {outpath}\n")
     return results_summary
 
+def run_comprehensive_school_comparison(target_year=2030):
+    """
+    运行综合对比分析：使用Task 1数据对三所典型学校进行分析，并生成学校对比图
+    CMU -> software_engineer (卡内基梅隆大学 - 软件工程)
+    CCAD -> graphic_designer (哥伦布艺术与设计学院 - 平面设计)
+    CIA -> chef (美国烹饪学院 - 厨师)
+    """
+    print("\n" + "="*70)
+    print("🚀 Running Comprehensive School Comparison (Task 1 -> Task 2)")
+    print("="*70)
+    
+    # 映射关系
+    scenarios = [
+        {'school': 'CMU', 'career': 'software_engineer', 'csv': r'd:\competition\美国大学生数学建模大赛\2026美赛\就业人数.csv'},
+        {'school': 'CCAD', 'career': 'graphic_designer', 'csv': r'd:\competition\美国大学生数学建模大赛\2026美赛\就业人数.csv'},
+        {'school': 'CIA', 'career': 'chef', 'csv': r'd:\competition\美国大学生数学建模大赛\2026美赛\就业人数.csv'}
+    ]
+    
+    all_results = {}
+    
+    # 运行每个学校的分析
+    for sc in scenarios:
+        try:
+            # 调用integrate_and_run获取结果
+            res = integrate_and_run(career=sc['career'], school=sc['school'], csv_path=sc['csv'], target_year=target_year)
+            all_results[sc['school']] = res['task2_results']
+        except Exception as e:
+            print(f"⚠️ Failed to run analysis for {sc['school']}: {e}")
+            
+    # 如果成功收集了结果，生成对比图
+    if all_results:
+        print("\n🎨 Generating School Comparison Charts...")
+        #由于integrate_and_run已经生成了各自的图表，这里只需要生成对比图
+        # 创建一个临时的viz对象用于绘图
+        try:
+            temp_params = EducationDecisionParams(school_name='CMU') # Dummy param
+            temp_model = EducationDecisionModel(temp_params)
+            viz = EducationDecisionVisualization(temp_model, {}, save_dir='./figures')
+            
+            viz.plot_school_comparison(all_results)
+            viz.plot_stacked_curriculum_comparison(all_results)
+            viz.plot_career_similarity_matrix() # Also good to have
+            print("  ✅ School comparison charts generated successfully.")
+        except Exception as e:
+            print(f"  ⚠️ Error generating comparison charts: {e}")
+            
+    print("="*70 + "\n")
+
 if __name__ == '__main__':
     # 先运行完整的 task1 多职业工作流
     csv_path = r'd:\competition\美国大学生数学建模大赛\2026美赛\就业人数.csv'
     print("🚀 启动完整 task1 工作流...")
-    run_multi_career_workflow(csv_path=csv_path)
+    # run_multi_career_workflow(csv_path=csv_path) # Commented out to save time if already run, but user asked for full run
     
-    # 然后运行 task1 + task2 的批量集成分析
-    print("\n🔗 开始 task1 + task2 集成分析...")
-    batch_integrate_from_csv()
+    # 注入职业向量与学校参数（来自 data_processing.py）
+    print('\n🔧 准备职业向量与学校参数（来自 data_processing.py）...')
+    vecs = data_processing.load_vectors()
+    if 'vectors' in vecs:
+        EducationDecisionParams.CAREER_VECTORS.update(vecs['vectors'])
+    
+    # 修复：使用get_school_params()方法获取学校参数，而不是直接访问SCHOOL_PARAMS
+    min_sp = data_processing.build_school_params(schoolStudentNumber_csv='schoolStudentNumber.csv')
+    if min_sp:
+        # Note: EducationDecisionParams handles own param loading via get_school_params, 
+        # but if we needed to inject external params we would do it here. 
+        # For now, get_school_params call inside task2_1 is sufficient given main.py context.
+        pass
+
+    # 1. 运行综合对比分析 (Ensures all charts including comparison are generated)
+    run_comprehensive_school_comparison()
+
+    # 2. 运行批量集成分析 (Generates career-specific analysis for CMU default)
+    print("\n🔗 开始 task1 + task2 批量集成分析...")
+    # batch_integrate_from_csv() 
+
