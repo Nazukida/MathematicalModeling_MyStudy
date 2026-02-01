@@ -493,6 +493,9 @@ class EducationDecisionParams:
         self.sa_temp = 100  # 初始温度
         self.sa_cooling = 0.95  # 冷却率
 
+        # ============ 灵敏度分析专用 ============
+        self.custom_weights = None  # 用于覆盖默认权重进行分析
+
         # ============ 技能权重（即将被calculate_utility取代，保留供参考） ============
         self.skill_weights = {} # Placeholder
 
@@ -525,8 +528,12 @@ class EducationDecisionParams:
         计算课程组合的效用函数 (Adaptive Weight Matrix)
         移除 Security 维度，保留收益递减逻辑
         """
+        # 0. 检查是否有自定义权重（用于灵敏度分析）
+        if self.custom_weights:
+            base_w = self.custom_weights
+        
         # 1. 基础权重设定 - 移除 Security, 重新分配权重
-        if self.school_name == 'CMU':
+        elif self.school_name == 'CMU':
             # CMU：AI与Base并重
             base_w = {'x_base': 0.40, 'x_AI': 0.25, 'x_ethics': 0.10, 'x_proj': 0.25}
         elif self.school_name == 'CCAD':
@@ -657,7 +664,7 @@ class EducationDecisionModel:
                  change_ratio = np.abs(X - current_X) / current_X
                  change_ratio = np.nan_to_num(change_ratio) # Handle 0/0 or X/0
 
-            transition_cost = 0.05 * np.sum(change_ratio[change_ratio > 0.3]) # 仅对极端变动微调
+            transition_cost = 0.05 * np.sum(change_ratio[change_ratio > 0.25]) # 仅对极端变动微调
 
             return skill_utility - transition_cost
 
@@ -778,6 +785,74 @@ class EducationDecisionModel:
             'transfer_gaps': transfer_gaps
         }
 
+    def run_sensitivity_analysis(self):
+        """
+        执行灵敏度分析：考察关键参数变化对模型输出的影响
+        
+        分析维度：
+        1. Lambda (宏观): 考察行政惯性变化对招生调整量的影响
+        2. AI Weight (微观): 考察AI课程权重变化对学分分配的影响
+        """
+        results = {}
+        
+        # --- 1. Lambda Sensitivity Analysis ---
+        lambda_range = np.linspace(0.01, 0.30, 30)
+        enrollment_adjustments = []
+        original_lambda = self.params.lambda_admin
+        
+        for lam in lambda_range:
+            self.params.lambda_admin = lam
+            res = self.enrollment_response()
+            enrollment_adjustments.append(res['adjustment'])
+            
+        self.params.lambda_admin = original_lambda # Restore
+        results['lambda_sensitivity'] = {
+            'range': lambda_range,
+            'adjustments': enrollment_adjustments
+        }
+        
+        # --- 2. AI Weight Sensitivity Analysis ---
+        # 考察当 AI 权重从 0.1 增加到 0.8 时（其他权重按比例缩减），x_AI 的变化
+        ai_weight_range = np.linspace(0.1, 0.8, 15)
+        ai_credits_history = []
+        base_credits_history = []
+        
+        original_custom_weights = self.params.custom_weights
+        
+        # 获取当前基准权重用于比例计算
+        if self.params.school_name == 'CMU':
+            base_w_template = {'x_base': 0.40, 'x_AI': 0.25, 'x_ethics': 0.10, 'x_proj': 0.25}
+        else:
+            base_w_template = {'x_base': 0.35, 'x_AI': 0.15, 'x_proj': 0.40, 'x_ethics': 0.10}
+            
+        for new_ai_w in ai_weight_range:
+            # 重新归一化其他权重
+            remaining_w = 1.0 - new_ai_w
+            old_ai_w = base_w_template['x_AI']
+            old_sum_others = sum([v for k,v in base_w_template.items() if k != 'x_AI'])
+            
+            new_weights = {}
+            for k, v in base_w_template.items():
+                if k == 'x_AI':
+                    new_weights[k] = new_ai_w
+                else:
+                    # 按原比例分配剩余权重
+                    new_weights[k] = v / old_sum_others * remaining_w if old_sum_others > 0 else 0
+            
+            self.params.custom_weights = new_weights
+            opt_res = self.curriculum_optimization_sa()
+            ai_credits_history.append(opt_res['optimal_curriculum']['x_AI'])
+            base_credits_history.append(opt_res['optimal_curriculum']['x_base'])
+            
+        self.params.custom_weights = original_custom_weights # Restore
+        results['weight_sensitivity'] = {
+            'range': ai_weight_range,
+            'ai_credits': ai_credits_history,
+            'base_credits': base_credits_history
+        }
+        
+        return results
+
     def run_full_analysis(self, verbose=True):
         """
         执行完整分析流程
@@ -801,11 +876,15 @@ class EducationDecisionModel:
             career = 'software_engineer' if self.params.school_name == 'CMU' else ('graphic_designer' if self.params.school_name == 'CCAD' else 'chef')
             
         elasticity_results = self.career_elasticity(career)
+        
+        # 灵敏度分析
+        sensitivity_results = self.run_sensitivity_analysis()
 
         results = {
             'enrollment_response': enrollment_results,
             'curriculum_optimization': curriculum_results,
-            'career_elasticity': elasticity_results
+            'career_elasticity': elasticity_results,
+            'sensitivity_analysis': sensitivity_results
         }
 
         if verbose:
@@ -1649,6 +1728,135 @@ class EducationDecisionVisualization:
         ahp = get_ahp_calculator()
         
         # 专业表头
+        
+        # 表格数据实现略... 这里保留原有结构。
+        pass
+
+    def plot_sensitivity_analysis(self, figsize=(14, 6)):
+        """
+        绘制灵敏度分析图：
+        1. Lambda Sensitivity (招生调整 vs Lambda)
+        2. Weight Sensitivity (学分分配 vs AI权重)
+        """
+        if 'sensitivity_analysis' not in self.results:
+            print("  ⚠️ No sensitivity analysis results found.")
+            return
+
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        fig.suptitle(f'{self.school} - Sensitivity Analysis', fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
+        
+        # Subplot 1: Lambda Sensitivity
+        ax1 = axes[0]
+        data = self.results['sensitivity_analysis']['lambda_sensitivity']
+        x = data['range']
+        y = data['adjustments']
+        
+        # 绘制主线
+        ax1.plot(x, y, color=PlotStyleConfig.COLORS['primary'], linewidth=2.5, marker='o', markersize=4, label='Adjustment Amount')
+        
+        # 标记当前Lambda
+        current_lambda = self.model.params.lambda_admin
+        current_adj = self.results['enrollment_response']['adjustment']
+        ax1.plot(current_lambda, current_adj, marker='*', markersize=15, color=PlotStyleConfig.COLORS['gold'], 
+                label=f'Current $\lambda$={current_lambda:.3f}', zorder=10)
+        
+        ax1.set_title('Macro Sensitivity: Enrollment Adjustment vs $\lambda$', fontsize=12, fontweight='bold')
+        ax1.set_xlabel('Administrative Coefficient ($\lambda$)', fontsize=11)
+        ax1.set_ylabel('Enrollment Adjustment ($\Delta E$)', fontsize=11)
+        ax1.grid(True, linestyle='--', alpha=0.3)
+        ax1.legend()
+        
+        # Subplot 2: Weight Sensitivity
+        ax2 = axes[1]
+        data = self.results['sensitivity_analysis']['weight_sensitivity']
+        x = data['range']
+        y_ai = data['ai_credits']
+        y_base = data['base_credits']
+        
+        ax2.plot(x, y_ai, color=PlotStyleConfig.COLORS['secondary'], linewidth=2.5, marker='s', markersize=4, label='AI Credits')
+        ax2.plot(x, y_base, color=PlotStyleConfig.COLORS['neutral'], linewidth=2, linestyle='--', label='Base Credits')
+        
+        ax2.set_title('Micro Sensitivity: Credit Allocation vs AI Weight', fontsize=12, fontweight='bold')
+        ax2.set_xlabel('Weight of AI Skill ($w_{AI}$)', fontsize=11)
+        ax2.set_ylabel('Optimized Credits', fontsize=11)
+        ax2.grid(True, linestyle='--', alpha=0.3)
+        ax2.legend()
+        
+        plt.tight_layout()
+        paths = self.saver.save(fig, 'sensitivity_analysis')
+        print(f"  💾 Sensitivity analysis plot saved: {paths[0]}")
+    
+    def plot_ahp_summary_table(self, figsize=(14, 7)):
+        """
+        绘制AHP分析汇总表格 - 专业论文展示格式
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        fig.patch.set_facecolor('white')
+        ax.set_facecolor('white')
+        ax.axis('off')
+        
+        # 专业标题
+        fig.suptitle('AHP Analysis Summary: Administrative Adjustment Coefficient (λ)',
+                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.96)
+        fig.text(0.5, 0.90, 'Hierarchical Decision Model for University Capacity Assessment', 
+                ha='center', fontsize=12, style='italic', color=PlotStyleConfig.COLORS['neutral'])
+
+        # 获取AHP数据
+        ahp = get_ahp_calculator()
+        
+        # 专业表头
+        columns = ['University', 'C1: Strategic\nScalability\n(W=0.4)', 
+                   'C2: Physical\nIndependence\n(W=0.4)', 
+                   'C3: Service\nElasticity\n(W=0.2)', 
+                   'Composite\nScore (Z)', 'Final λ\n(Normalized)']
+        
+        # 学校行颜色
+        school_row_colors = {
+            'CMU': '#FFE4E6',
+            'CCAD': '#FFF3E0',
+            'CIA': '#E3F2FD'
+        }
+        
+        table_data = []
+        row_colors = []
+        for school in ahp.alternatives:
+            idx = ahp.alternatives.index(school)
+            composite = sum([ahp.criteria_weights[i] * ahp.scores[list(ahp.scores.keys())[i]][idx] 
+                           for i in range(3)])
+            row = [
+                school,
+                f"{ahp.scores['C1_Strategic'][idx]:.4f}",
+                f"{ahp.scores['C2_Physical'][idx]:.4f}",
+                f"{ahp.scores['C3_Service'][idx]:.4f}",
+                f"{composite:.4f}",
+                f"{ahp.final_lambdas[school]:.4f} ({ahp.final_lambdas[school]*100:.1f}%)"
+            ]
+            table_data.append(row)
+            row_colors.append(school_row_colors.get(school, 'white'))
+        
+        # 创建专业表格
+        table = ax.table(cellText=table_data, colLabels=columns, loc='center',
+                        cellLoc='center', colWidths=[0.15, 0.15, 0.15, 0.15, 0.15, 0.2],
+                        rowColours=row_colors)
+        
+        # 美化表格
+        table.auto_set_font_size(False)
+        table.set_fontsize(11)
+        table.scale(1, 2)
+        
+        for (row, col), cell in table.get_celld().items():
+            if row == 0:
+                cell.set_text_props(weight='bold', color='white')
+                cell.set_facecolor(PlotStyleConfig.COLORS['dark'])
+            else:
+                cell.set_text_props(color='#333333')
+            cell.set_edgecolor('#DDDDDD')
+            cell.set_linewidth(1)
+
+        plt.tight_layout(rect=[0, 0, 1, 0.88])
+        saver_all = FigureSaver('./figures')
+        paths = saver_all.save(fig, 'ahp_summary_table')
+        print(f"  💾 AHP summary table saved: {paths[0]}")
         columns = ['University', 'C1: Strategic\nScalability\n(W=0.4)', 
                    'C2: Physical\nIndependence\n(W=0.4)', 
                    'C3: Service\nElasticity\n(W=0.2)', 
@@ -1813,6 +2021,10 @@ def run_education_decision_workflow():
         # 图6: 资源竞争分析图
         print(f"\n  🎨 绘制{school}资源竞争分析图...")
         viz.plot_pareto_frontier()
+
+        # 图7: 灵敏度分析图 (新增)
+        print(f"\n  🎨 绘制{school}灵敏度分析图...")
+        viz.plot_sensitivity_analysis()
 
         # ========== Step 5: 保存结果 ==========
         print("\n【Step 5】保存分析结果...")
