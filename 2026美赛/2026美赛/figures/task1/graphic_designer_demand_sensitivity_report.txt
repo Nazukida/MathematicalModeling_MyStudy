@@ -1,0 +1,33 @@
+Employment Demand (F_t) Sensitivity Analysis Report for graphic_designer
+======================================================================
+Baseline Final Demand (2033): 22.16 (10,000s)
+Analysis Method: One-At-A-Time (OAAT) perturbation (+/- 10%)
+
+1. Parameter Ranking (By Impact Magnitude)
+----------------------------------------
+  #1 A: AI Enhance. (-> F_t)
+     Range: 1.67 (from 21.32 to 22.99)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+  #2 D4: Human Const. (-> F_t)
+     Range: 0.80 (from 21.75 to 22.56)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+  #3 D1: Auto. Potential (-> P_t)
+     Range: 0.30 (from 22.31 to 22.01)
+     Correlation: Negative (Increase Param -> Decrease Demand)
+
+  #4 D2: Evol. Speed (-> P_t)
+     Range: 0.02 (from 22.17 to 22.15)
+     Correlation: Negative (Increase Param -> Decrease Demand)
+
+  #5 D3: Market Elast. (-> F_t)
+     Range: 0.01 (from 22.15 to 22.16)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+2. Key Insights
+----------------------------------------
+   - The most critical driver is A: AI Enhance. (-> F_t).
+     A 10% change in this parameter causes a 7.5% swing in final employment.
+   - AI Enhancement (A) plays a significant role, confirming that the productivity boost factor is crucial for this model.
+   - Automation Potential (D1) has a negative impact. This means as AI gets more capable, jobs in this field SHRINK.

@@ -199,7 +199,7 @@ class SplitVisualization:
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
         current = [self.model.params.current_curriculum.get(k, 0) for k in keys]
         optimal = [r['optimal_curriculum'].get(k, 0) for k in keys]
-        labels = ['Base', 'AI', 'Ethics', 'Project']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         
         x = np.arange(len(labels))
         width = 0.35
@@ -262,7 +262,7 @@ class SplitVisualization:
 
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
         sizes = [base_w.get(k, 0) * np.sqrt(r['optimal_curriculum'].get(k, 0)) * 10 for k in keys]
-        labels = ['Base', 'AI', 'Ethics', 'Project']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         colors = PlotStyleConfig.get_palette(4)
         
         wedges, texts, autotexts = ax.pie(sizes, labels=labels, colors=colors, 
@@ -304,7 +304,7 @@ class SplitVisualization:
             base_w = {'x_base': 0.3, 'x_AI': 0.3, 'x_proj': 0.3, 'x_ethics': 0.1}
 
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        labels = ['Base', 'AI', 'Ethics', 'Project']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         utilities = [base_w.get(k, 0) * np.sqrt(r['optimal_curriculum'].get(k, 0)) for k in keys]
         colors = PlotStyleConfig.get_palette(4)
         
@@ -951,7 +951,7 @@ class CrossSchoolVisualization:
 
         schools = ['CMU', 'CCAD', 'CIA']
         course_types = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        display_names = ['Base', 'AI', 'Ethics', 'Project']
+        display_names = ['Core', 'AI', 'Human', 'Cross']
         colors = ["#5B9BEF", "#F69D62", "#80EF6A", "#EA9DE1"]
         
         # 准备数据

@@ -962,7 +962,7 @@ class EducationDecisionVisualization:
                bbox=dict(boxstyle='round,pad=0.5', facecolor='white', 
                         edgecolor=PlotStyleConfig.COLORS['primary'], linewidth=2, alpha=0.9))
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'enrollment_response_analysis')
         print(f"  💾 Enrollment response plot saved: {paths[0]}")
 
@@ -986,7 +986,7 @@ class EducationDecisionVisualization:
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
         current = [self.model.params.current_curriculum.get(k, 0) for k in keys]
         optimal = [r['optimal_curriculum'].get(k, 0) for k in keys]
-        labels = ['Base', 'AI', 'Ethics', 'Proj']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         
         x = np.arange(len(labels))
         width = 0.35
@@ -1028,7 +1028,7 @@ class EducationDecisionVisualization:
         # 计算各部分效用 (使用 sqrt 逻辑保持一致)
         sizes = [base_w.get(k, 0) * np.sqrt(r['optimal_curriculum'].get(k, 0)) * 10 for k in keys]
         # keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        labels_donut = ['Base', 'AI', 'Ethics', 'Proj']
+        labels_donut = ['Core', 'AI', 'Human', 'Cross']
         colors_donut = [colors[0], colors[1], colors[2], colors[3]]
         
         wedges, texts, autotexts = ax2.pie(sizes, labels=labels_donut, colors=colors_donut, 
@@ -1088,7 +1088,7 @@ class EducationDecisionVisualization:
         ax4.legend(loc='upper left')
         ax4.grid(True, alpha=0.3)
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'curriculum_optimization_analysis')
         print(f"  💾 Curriculum optimization plot saved: {paths[0]}")
 
@@ -1138,8 +1138,8 @@ class EducationDecisionVisualization:
         
         # 标题
         fig.suptitle(f'{self.model.params.school_name} - Career Path Elasticity Analysis',
-                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
-        ax.set_title('Similarity to Origin Career (Higher = Easier Transition)', fontsize=12, style='italic', pad=10)
+                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.98)
+        ax.set_title('Similarity to Origin Career (Higher = Easier Transition)', fontsize=12, style='italic', pad=15)
         
         # 添加背景区域
         ax.axvspan(0.9, 1.1, alpha=0.1, color=PlotStyleConfig.COLORS['accent'])
@@ -1147,7 +1147,7 @@ class EducationDecisionVisualization:
         ax.axvspan(0, 0.5, alpha=0.1, color=PlotStyleConfig.COLORS['danger'])
         
         ax.grid(True, axis='x', alpha=0.3)
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
 
         paths = self.saver.save(fig, 'career_elasticity_analysis')
         print(f"  💾 Career elasticity plot saved: {paths[0]}")
@@ -1289,10 +1289,10 @@ class EducationDecisionVisualization:
             ax.set_ylim(y_min - 0.05 * y_range, y_max + 0.05 * y_range)
         
         fig.suptitle(f'{self.model.params.school_name} - Simulated Annealing Optimization',
-                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
-        ax.set_title('Convergence Process of Curriculum Optimization', fontsize=12, style='italic', pad=10)
+                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.98)
+        ax.set_title('Convergence Process of Curriculum Optimization', fontsize=12, style='italic', pad=15)
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'sa_convergence_plot')
         print(f"  💾 SA convergence plot saved: {paths[0]}")
 
@@ -1404,7 +1404,7 @@ class EducationDecisionVisualization:
         for spine in ax.spines.values():
             spine.set_edgecolor(PlotStyleConfig.COLORS['grid'])
         
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'resource_competition_analysis')
         print(f"  💾 Resource competition plot saved: {paths[0]}")
 
@@ -1517,7 +1517,7 @@ class EducationDecisionVisualization:
         
         schools = ['CMU', 'CCAD', 'CIA']
         course_types = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        display_names = ['Base', 'AI', 'Ethics', 'Project']
+        display_names = ['Core', 'AI', 'Human', 'Cross']
         
         # 柔和淡雅的配色方案 (Morandi/Pastel styles)
         # Base(Blue), AI(Orange), Ethics(Green), Project(Purple)

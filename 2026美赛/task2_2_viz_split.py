@@ -322,7 +322,7 @@ class SplitVisualization:
         
         r = self.results['curriculum_optimization']
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        labels = ['Base', 'AI', 'Ethics', 'Project']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         values = [r['optimal_curriculum'].get(k, 0) for k in keys]
         colors = [PlotStyleConfig.COURSE_COLORS[k] for k in keys]
         
@@ -373,7 +373,7 @@ class SplitVisualization:
             base_w = {'x_base': 0.3, 'x_AI': 0.3, 'x_proj': 0.3, 'x_ethics': 0.1}
         
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        labels = ['Base', 'AI', 'Ethics', 'Project']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         colors = [PlotStyleConfig.COURSE_COLORS[k] for k in keys]
         
         # 计算各部分效用贡献
@@ -1047,7 +1047,7 @@ class SplitVisualization:
         fig, ax = plt.subplots(figsize=figsize)
         
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        labels = ['Base', 'AI', 'Ethics', 'Project']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         
         baseline_vals = [baseline_results['curriculum_optimization']['optimal_curriculum'][k] for k in keys]
         constrained_vals = [constrained_results['curriculum_optimization']['optimal_curriculum'][k] for k in keys]
@@ -1243,7 +1243,7 @@ class SplitVisualization:
         
         schools = ['CMU', 'CCAD', 'CIA']
         course_types = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        display_names = ['Base', 'AI', 'Ethics', 'Project']
+        display_names = ['Core', 'AI', 'Human', 'Cross']
         colors = [PlotStyleConfig.COURSE_COLORS[k] for k in course_types]
         
         # 准备数据

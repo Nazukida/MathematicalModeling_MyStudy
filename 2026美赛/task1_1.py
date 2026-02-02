@@ -80,20 +80,27 @@ class FigureSaver:
     """图表保存工具类"""
 
     def __init__(self, save_dir='./figures', format='png'):
-        self.save_dir = save_dir
+        self.save_dir = os.path.abspath(save_dir)
         self.format = format
-        os.makedirs(save_dir, exist_ok=True)
+        os.makedirs(self.save_dir, exist_ok=True)
 
     def save(self, fig, filename, formats=None, tight=True):
         if formats is None:
             formats = [self.format]
         if tight:
-            plt.tight_layout()
+            try:
+                fig.tight_layout()
+            except:
+                pass
         paths = []
+        # Sanitize filename
+        filename = "".join([c for c in filename if c.isalnum() or c in ('_', '-', ' ')])
+        
         for fmt in formats:
             path = os.path.join(self.save_dir, f"{filename}.{fmt}")
             fig.savefig(path, dpi=300, bbox_inches='tight')
             paths.append(path)
+        plt.close(fig)
         return paths
 
 
@@ -171,6 +178,9 @@ class AICareerParams:
         self.D2_range = (max(0, self.D2 - 0.1), min(1, self.D2 + 0.1))
         self.D3_range = (max(0, self.D3 - 0.1), min(1, self.D3 + 0.1))
         self.D4_range = (max(0, self.D4 - 0.1), min(1, self.D4 + 0.1))
+
+        # 灵敏度分析 override 参数
+        self.r_override = None  # 用于手动控制GM(1,1)的增长率 r
 
         # 灵敏度分析步长（可由用户在 params 上修改）
         # 例如 0.1 表示按 0.1 的步长生成情景
@@ -382,7 +392,13 @@ class AICareerModel:
             b = slope
 
         # 计算增长率 r = e^{-a} - 1
-        r = np.exp(-a) - 1
+        r_calc = np.exp(-a) - 1
+
+        # 检查是否有手动覆盖 (用于灵敏度分析)
+        if hasattr(self.params, 'r_override') and self.params.r_override is not None:
+            r = self.params.r_override
+        else:
+            r = r_calc
 
         # 自然趋势公式：Y_t = x^{(0)}(n) * (1+r)^{t-n}
         pred_values = []
@@ -390,7 +406,7 @@ class AICareerModel:
             Y_t = x0[-1] * (1 + r)**k
             pred_values.append(Y_t)
 
-        return np.array(pred_values)
+        return np.array(pred_values), r
 
     def logistic_curve(self, t, L, k, t0):
         """
@@ -459,7 +475,7 @@ class AICareerModel:
         if verbose:
             print("  📈 步骤1: GM(1,1) 基准预测模型")
 
-        baseline_predictions = self.gm11_predict(p.historical_data, p.forecast_years)
+        baseline_predictions, growth_rate = self.gm11_predict(p.historical_data, p.forecast_years)
 
         # 构造时间序列
         future_years = np.arange(p.start_year, p.start_year + p.forecast_years)
@@ -498,7 +514,8 @@ class AICareerModel:
             'enhancement_parts': np.array(enhancement_parts),
             'new_market_parts': np.array(new_market_parts),
             'future_years': future_years,
-            'historical_years': historical_years
+            'historical_years': historical_years,
+            'growth_rate': growth_rate
         }
 
         if verbose:
@@ -528,7 +545,7 @@ class AICareerVisualization:
         self.results = results
         self.saver = FigureSaver(save_dir)
 
-    def plot_complete_evolution(self, figsize=(14, 10)):
+    def plot_complete_evolution(self, figsize=(14, 7)):
         """
         绘制完整演化预测图
         """
@@ -536,9 +553,7 @@ class AICareerVisualization:
         # 主标题加粗，添加副标题
         occupation_english = self.model.params.occupation_name
         fig.suptitle(f'{occupation_english} - AI Career Evolution Prediction',
-                    fontsize=18, fontweight='bold')
-        fig.text(0.5, 0.95, 'Comprehensive Analysis of Baseline Trends, Technology Penetration, and Value Recomposition',
-                ha='center', fontsize=12, style='italic')
+                    fontsize=16, fontweight='bold', y=0.98)
 
         r = self.results
         colors = PlotStyleConfig.get_palette()
@@ -611,12 +626,12 @@ class AICareerVisualization:
 
         # 保存图片
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_evolution_complete"
-        paths = self.saver.save(fig, career_filename)
+        paths = self.saver.save(fig, career_filename, tight=False)
         print(f"  💾 Complete evolution plot saved: {paths[0]}")
 
         return fig
 
-    def plot_comparison_scenarios(self, figsize=(12, 8)):
+    def plot_comparison_scenarios(self, figsize=(12, 6)):
         """
         绘制不同情景对比
         """
@@ -624,8 +639,6 @@ class AICareerVisualization:
         occupation_english = self.model.params.occupation_name
         fig.suptitle(f'{occupation_english} - Parameter Sensitivity Analysis',
                     fontsize=16, fontweight='bold')
-        fig.text(0.5, 0.95, 'Impact of Key Dimensions on Employment Predictions',
-                ha='center', fontsize=12, style='italic')
 
         r = self.results
         colors = PlotStyleConfig.get_palette()
@@ -714,12 +727,12 @@ class AICareerVisualization:
 
         # 保存图片
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_sensitivity_analysis"
-        paths = self.saver.save(fig, career_filename)
+        paths = self.saver.save(fig, career_filename, tight=False)
         print(f"  💾 Parameter sensitivity analysis plot saved: {paths[0]}")
 
         return fig
 
-    def plot_model_components(self, figsize=(14, 8)):
+    def plot_model_components(self, figsize=(14, 6)):
         """
         绘制模型组件分解图
         """
@@ -727,8 +740,6 @@ class AICareerVisualization:
         occupation_english = self.model.params.occupation_name
         fig.suptitle(f'{occupation_english} - Model Components Breakdown',
                     fontsize=16, fontweight='bold')
-        fig.text(0.5, 0.95, 'Detailed Analysis of Each Model Component',
-                ha='center', fontsize=12, style='italic')
 
         r = self.results
         colors = PlotStyleConfig.get_palette()
@@ -791,12 +802,12 @@ class AICareerVisualization:
 
         # 保存图片
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_model_components"
-        paths = self.saver.save(fig, career_filename)
+        paths = self.saver.save(fig, career_filename, tight=False)
         print(f"  💾 Model components breakdown plot saved: {paths[0]}")
 
         return fig
 
-    def plot_dimension_sensitivity(self, figsize=(14, 10)):
+    def plot_dimension_sensitivity(self, figsize=(14, 8)):
         """
         绘制维度敏感性分析图
         """
@@ -804,8 +815,6 @@ class AICareerVisualization:
         occupation_english = self.model.params.occupation_name
         fig.suptitle(f'{occupation_english} - Dimension Sensitivity Analysis',
                     fontsize=16, fontweight='bold')
-        fig.text(0.5, 0.95, 'Impact of Each Dimension Parameter on Final Predictions',
-                ha='center', fontsize=12, style='italic')
 
         r = self.results
         colors = PlotStyleConfig.get_palette()
@@ -877,12 +886,12 @@ class AICareerVisualization:
 
         # 保存图片
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_dimension_sensitivity"
-        paths = self.saver.save(fig, career_filename)
+        paths = self.saver.save(fig, career_filename, tight=False)
         print(f"  💾 Dimension sensitivity analysis plot saved: {paths[0]}")
 
         return fig
 
-    def plot_phase_analysis(self, figsize=(14, 6)):
+    def plot_phase_analysis(self, figsize=(14, 5)):
         """
         绘制阶段分析图
         """
@@ -890,7 +899,6 @@ class AICareerVisualization:
         fig, (ax_left, ax_right) = plt.subplots(1, 2, figsize=figsize)
         occupation_english = self.model.params.occupation_name
         fig.suptitle(f'{occupation_english} - AI Impact Phase Analysis', fontsize=16, fontweight='bold')
-        fig.text(0.5, 0.95, 'Evolution of AI Impact Over Time', ha='center', fontsize=12, style='italic')
 
         r = self.results
         colors = PlotStyleConfig.get_palette()
@@ -918,19 +926,550 @@ class AICareerVisualization:
         plt.tight_layout(rect=[0, 0, 1, 0.93])
 
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_phase_analysis"
-        paths = self.saver.save(fig, career_filename)
+        paths = self.saver.save(fig, career_filename, tight=False)
         print(f"  💾 Phase analysis plot saved: {paths[0]}")
 
         return fig
 
-    def plot_dimension_radar(self, figsize=(10, 10)):
+    def plot_penetration_sensitivity(self, figsize=(8, 5)):
+        """
+        绘制AI渗透率灵敏度分析图 (D1 & D2) - 分开输出
+        专门分析AI渗透率 P(t) 如何随自动化潜力(D1)和技能演进速度(D2)变化
+        """
+        occupation_english = self.model.params.occupation_name
+        r = self.results
+        colors = PlotStyleConfig.get_palette()
+        p = self.model.params
+        
+        save_dir_task1 = os.path.join(self.saver.save_dir, 'task1')
+        os.makedirs(save_dir_task1, exist_ok=True)
+        saver_task1 = FigureSaver(save_dir_task1)
+
+        # --- 辅助函数：只计算渗透率 ---
+        def get_penetration_curves(param_name, param_values):
+            curves = []
+            for val in param_values:
+                # 临时修改参数对象
+                original_val = getattr(p, param_name)
+                setattr(p, param_name, val)
+                
+                # 重新计算 Logistic 参数
+                L, k, t0 = self.model.fit_logistic_params()
+                curve = self.model.logistic_curve(r['future_years'], L, k, t0)
+                curves.append(curve)
+                
+                # 恢复参数
+                setattr(p, param_name, original_val)
+            return pd.DataFrame(curves, index=param_values, columns=r['future_years'])
+
+        # --- 图1: D1 (自动化潜力) 对渗透率的影响 ---
+        fig1, ax1 = plt.subplots(figsize=figsize)
+        fig1.suptitle(f'{occupation_english} - AI Penetration Sensitivity (D1)', fontsize=14, fontweight='bold', y=0.96)
+        
+        d1_values = p.get_param_values('D1')
+        d1_curves = get_penetration_curves('D1', d1_values)
+        
+        for i, (val, curve) in enumerate(d1_curves.iterrows()):
+            ax1.plot(r['future_years'], curve * 100, label=f'D1={val:.2f}', 
+                    linewidth=2, color=colors[i % len(colors)])
+        
+        ax1.plot(r['future_years'], r['penetration_rates'] * 100, 'k--', label='Baseline', linewidth=2.5, alpha=0.7)
+        ax1.set_title('Impact of Automation Potential (Ceiling)', fontweight='bold', fontsize=11)
+        ax1.set_xlabel('Year', fontsize=10)
+        ax1.set_ylabel('AI Penetration Rate (%)', fontsize=10)
+        ax1.set_ylim(0, 100)
+        ax1.legend(loc='lower right', frameon=True, fontsize=9)
+        ax1.grid(True, alpha=0.3)
+        ax1.text(0.05, 0.95, "Interpretation:\nD1 controls saturation (ceiling).\nHigher D1 -> Higher Max Level.",
+                transform=ax1.transAxes, fontsize=9, verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.9, edgecolor='gray', boxstyle='round,pad=0.5'))
+        
+        plt.tight_layout(rect=[0, 0, 1, 0.92])
+        filename_d1 = f"{occupation_english.replace(' ', '_').lower()}_penetration_sensitivity_d1"
+        paths_d1 = saver_task1.save(fig1, filename_d1, tight=False)
+        print(f"  💾 Penetration Sensitivity D1 plot saved: {paths_d1[0]}")
+
+        # --- 图2: D2 (技能演进速度) 对渗透率的影响 ---
+        fig2, ax2 = plt.subplots(figsize=figsize)
+        fig2.suptitle(f'{occupation_english} - AI Penetration Sensitivity (D2)', fontsize=14, fontweight='bold', y=0.96)
+
+        d2_values = p.get_param_values('D2')
+        d2_curves = get_penetration_curves('D2', d2_values)
+        
+        for i, (val, curve) in enumerate(d2_curves.iterrows()):
+            ax2.plot(r['future_years'], curve * 100, label=f'D2={val:.2f}', 
+                    linewidth=2, color=colors[(i + 3) % len(colors)])
+            
+        ax2.plot(r['future_years'], r['penetration_rates'] * 100, 'k--', label='Baseline', linewidth=2.5, alpha=0.7)
+        ax2.set_title('Impact of Skill Evolution Speed (Adoption Rate)', fontweight='bold', fontsize=11)
+        ax2.set_xlabel('Year', fontsize=10)
+        ax2.set_ylabel('AI Penetration Rate (%)', fontsize=10)
+        ax2.set_ylim(0, 100)
+        ax2.legend(loc='lower right', frameon=True, fontsize=9)
+        ax2.grid(True, alpha=0.3)
+        ax2.text(0.05, 0.95, "Interpretation:\nD2 controls adoption speed.\nHigher D2 -> Steeper S-Curve.",
+                transform=ax2.transAxes, fontsize=9, verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.9, edgecolor='gray', boxstyle='round,pad=0.5'))
+        
+        plt.tight_layout(rect=[0, 0, 1, 0.92])
+        filename_d2 = f"{occupation_english.replace(' ', '_').lower()}_penetration_sensitivity_d2"
+        paths_d2 = saver_task1.save(fig2, filename_d2, tight=False)
+        print(f"  💾 Penetration Sensitivity D2 plot saved: {paths_d2[0]}")
+        
+        # 输出解读报告 (保持原逻辑)
+        self.generate_penetration_sensitivity_report(d1_curves, d2_curves, save_dir_task1)
+
+        return fig1, fig2
+
+    def generate_penetration_sensitivity_report(self, d1_curves, d2_curves, save_dir):
+        """生成详细的渗透率灵敏度解读报告"""
+        
+        career_name = self.model.params.occupation_name
+        report_path = os.path.join(save_dir, f"{career_name.replace(' ', '_').lower()}_sensitivity_report.txt")
+        
+        lines = []
+        lines.append(f"AI Penetration Rate Sensitivity Analysis Report for {career_name}")
+        lines.append("=" * 60)
+        lines.append(f"Date: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append("")
+        
+        # D1 分析
+        lines.append("1. Analysis of Automation Potential (D1)")
+        lines.append("-" * 40)
+        d1_range = d1_curves.index
+        max_p_low = d1_curves.iloc[0].max() * 100
+        max_p_high = d1_curves.iloc[-1].max() * 100
+        lines.append(f"   - Parameter Range: D1 varies from {d1_range.min():.2f} to {d1_range.max():.2f}")
+        lines.append(f"   - Effect on Saturation: As D1 increases, the maximum AI penetration rate increases.")
+        lines.append(f"   - Sensitivity: A change of {(d1_range.max() - d1_range.min()):.2f} in D1 results in a {(max_p_high - max_p_low):.2f}% difference in peak penetration.")
+        lines.append(f"   - Interpretation: Occupations with higher automation potential will see AI completely taking over tasks much earlier and to a greater extent.")
+        lines.append("")
+        
+        # D2 分析
+        lines.append("2. Analysis of Skill Evolution Speed (D2)")
+        lines.append("-" * 40)
+        d2_range = d2_curves.index
+        # 比较中点的斜率或2030年的值
+        mid_year_idx = len(d1_curves.columns) // 2
+        p_mid_low = d2_curves.iloc[0, mid_year_idx] * 100
+        p_mid_high = d2_curves.iloc[-1, mid_year_idx] * 100
+        lines.append(f"   - Parameter Range: D2 varies from {d2_range.min():.2f} to {d2_range.max():.2f}")
+        lines.append(f"   - Effect on Speed: High D2 accelerates the S-curve, causing the 'steep' adoption phase to occur sooner.")
+        lines.append(f"   - Sensitivity: At the mid-point ({d2_curves.columns[mid_year_idx]}), increasing D2 changes penetration from {p_mid_low:.1f}% to {p_mid_high:.1f}%.")
+        lines.append(f"   - Interpretation: For fields where technology evolves rapidly (High D2), the window for adaptation is much smaller.")
+        lines.append("")
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+        
+        print(f"  📄 Sensitivity report generated: {report_path}")
+
+    def plot_demand_sensitivity_tornado(self, figsize=(10, 5)):
+        """
+        绘制最终需求 F_t 的龙卷风图 (Tornado Diagram)
+        展示各关键参数 (D1-D4, A) 对最终年份就业预测结果的影响程度排列
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        occupation_english = self.model.params.occupation_name
+        
+        # 避免标题重叠，调整位置
+        fig.suptitle(f'{occupation_english} - Final Demand Sensitivity (Tornado)', 
+                    fontsize=14, fontweight='bold', y=0.98)
+
+        # 1. 获取基准值
+        baseline_final = self.results['final_demands'][-1]
+        
+        # 2. 定义要分析的参数及其变动幅度 (+/- 10%)
+        # 注意: 这里的 param_labels 对应 F_t 公式的核心因子
+        # F_t = Y_t * [ 1 + P_t * (A + D4 + D3*cost_red - 1) ]
+        params_to_analyze = ['D1', 'D2', 'D3', 'D4', 'A']
+        param_labels = {
+            'D1': 'D1: Auto. Potential (-> P_t)',
+            'D2': 'D2: Evol. Speed (-> P_t)',
+            'D3': 'D3: Market Elast. (-> F_t)',
+            'D4': 'D4: Human Const. (-> F_t)',
+            'A':  'A: AI Enhance. (-> F_t)'
+        }
+        
+        impacts = []
+        
+        # 3. 计算扰动影响
+        for param in params_to_analyze:
+            base_val = getattr(self.model.params, param)
+            
+            # 变动 +/- 10%
+            val_low = max(0, base_val * 0.9)
+            val_high = base_val * 1.1
+            if param in ['D1', 'D2', 'D3', 'D4']: # 0-1约束
+                val_high = min(1.0, val_high)
+            
+            # --- Low Case ---
+            # 临时修改参数 (Low)
+            original = getattr(self.model.params, param)
+            setattr(self.model.params, param, val_low)
+            model_low = AICareerModel(self.model.params)
+            res_low = model_low.predict_evolution(verbose=False)
+            demand_low = res_low['final_demands'][-1]
+            
+            # --- High Case ---
+            # 临时修改参数 (High)
+            setattr(self.model.params, param, val_high)
+            model_high = AICareerModel(self.model.params)
+            res_high = model_high.predict_evolution(verbose=False)
+            demand_high = res_high['final_demands'][-1]
+            
+            # 恢复参数
+            setattr(self.model.params, param, original)
+            
+            # 记录结果 (参数名, Low值变化, High值变化, 绝对范围)
+            impacts.append({
+                'param': param,
+                'label': param_labels[param],
+                'low_val': demand_low,
+                'high_val': demand_high,
+                'diff_low': demand_low - baseline_final,
+                'diff_high': demand_high - baseline_final,
+                'range': abs(demand_high - demand_low),
+                'base_val': base_val
+            })
+            
+        # 4. 根据影响范围排序 (从大到小)
+        impacts.sort(key=lambda x: x['range'], reverse=False) # 下面的最小，invert后最大的在上面
+        
+        # 5. 绘图
+        y_pos = np.arange(len(impacts))
+        labels = [item['label'] for item in impacts]
+        
+        # 提取绘图数据
+        diffs_low = np.array([item['diff_low'] for item in impacts])
+        diffs_high = np.array([item['diff_high'] for item in impacts])
+        
+        colors = PlotStyleConfig.COLORS
+        
+        # 绘制条形
+        # 这里区分正向影响和负向影响有点复杂，因为不同参数方向不同
+        # 简单处理：画出 ranges
+        rects1 = ax.barh(y_pos, diffs_high, height=0.6, align='center', 
+                        color=colors['primary'], alpha=0.7, label='+10% Param')
+        rects2 = ax.barh(y_pos, diffs_low, height=0.6, align='center', 
+                        color=colors['secondary'], alpha=0.7, label='-10% Param')
+            
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(labels, fontsize=10, fontweight='bold')
+        # ax.invert_yaxis() # 已经按升序排，最大的在最下面？不，Tornado通常最大在上面
+        # 重新排序一下
+        # 当前 impacts 是从小到大 range。plot 0在底部。
+        # 想要最大在顶部 -> 小在底部。是对的。
+        
+        ax.set_xlabel('Change in Final Employment (10,000s)')
+        ax.axvline(0, color='black', linewidth=0.8, linestyle='-')
+        ax.grid(axis='x', linestyle='--', alpha=0.5)
+        
+        # 自动调整X轴范围对称
+        max_limit = max(np.max(np.abs(diffs_low)), np.max(np.abs(diffs_high))) * 1.15
+        if max_limit == 0: max_limit = 1.0
+        ax.set_xlim(-max_limit, max_limit)
+        
+        ax.legend(loc='lower right', fontsize=9)
+        
+        # 添加基准信息
+        ax.text(0.02, 0.02, f"Baseline 2033: {baseline_final:.1f}", 
+                transform=ax.transAxes, fontsize=10, fontweight='bold',
+                bbox=dict(facecolor='white', alpha=0.8))
+
+        # 为每个条形添加数值标签
+        for y, d_low, d_high in zip(y_pos, diffs_low, diffs_high):
+            # High 端点
+            ha_high = 'left' if d_high >= 0 else 'right'
+            offset_high = 0.02 * max_limit * (1 if d_high >= 0 else -1)
+            ax.text(d_high + offset_high, y, f"{d_high:+.1f}", va='center', ha=ha_high, fontsize=9, color=colors['primary'])
+            
+            # Low 端点
+            ha_low = 'right' if d_low < 0 else 'left'
+            offset_low = 0.02 * max_limit * (-1 if d_low < 0 else 1)
+            ax.text(d_low + offset_low, y, f"{d_low:+.1f}", va='center', ha=ha_low, fontsize=9, color=colors['secondary'])
+
+        plt.tight_layout(rect=[0, 0, 1, 0.90])
+        
+        # 保存
+        save_dir_task1 = os.path.join(self.saver.save_dir, 'task1')
+        os.makedirs(save_dir_task1, exist_ok=True)
+        filename = f"{occupation_english.replace(' ', '_').lower()}_demand_tornado"
+        paths = FigureSaver(save_dir_task1).save(fig, filename, tight=False)
+        print(f"  💾 Final Demand Tornado plot saved: {paths[0]}")
+        
+        # 生成报告
+        self.generate_demand_sensitivity_report(impacts, baseline_final, save_dir_task1)
+        
+        return fig
+
+    def generate_demand_sensitivity_report(self, impacts, baseline, save_dir):
+        """生成详细的需求灵敏度解读报告"""
+        career_name = self.model.params.occupation_name
+        report_path = os.path.join(save_dir, f"{career_name.replace(' ', '_').lower()}_demand_sensitivity_report.txt")
+        
+        # impacts 是从小到大排序的，为了报告，我们倒序它
+        sorted_impacts = sorted(impacts, key=lambda x: x['range'], reverse=True)
+        
+        lines = []
+        lines.append(f"Employment Demand (F_t) Sensitivity Analysis Report for {career_name}")
+        lines.append("=" * 70)
+        lines.append(f"Baseline Final Demand (2033): {baseline:.2f} (10,000s)")
+        lines.append(f"Analysis Method: One-At-A-Time (OAAT) perturbation (+/- 10%)")
+        lines.append("")
+        
+        lines.append("1. Parameter Ranking (By Impact Magnitude)")
+        lines.append("-" * 40)
+        for i, item in enumerate(sorted_impacts, 1):
+            lines.append(f"  #{i} {item['label']}")
+            lines.append(f"     Range: {item['range']:.2f} (from {item['low_val']:.2f} to {item['high_val']:.2f})")
+            # 判断正负相关
+            if item['high_val'] > item['low_val']:
+                correlation = "Positive (Increase Param -> Increase Demand)"
+            else:
+                correlation = "Negative (Increase Param -> Decrease Demand)"
+            lines.append(f"     Correlation: {correlation}")
+            lines.append("")
+            
+        lines.append("2. Key Insights")
+        lines.append("-" * 40)
+        top_factor = sorted_impacts[0]
+        lines.append(f"   - The most critical driver is {top_factor['label']}.")
+        lines.append(f"     A 10% change in this parameter causes a {top_factor['range']/baseline*100:.1f}% swing in final employment.")
+        
+        # 关于AI渗透率参数的特定解读
+        d1_impact = next((x for x in sorted_impacts if x['param'] == 'D1'), None)
+        a_impact = next((x for x in sorted_impacts if x['param'] == 'A'), None)
+        
+        if a_impact and a_impact['range'] > 1.0:
+            lines.append(f"   - AI Enhancement (A) plays a significant role, confirming that the productivity boost factor is crucial for this model.")
+        
+        if d1_impact:
+            d1_corr = "positive" if d1_impact['high_val'] > d1_impact['low_val'] else "negative"
+            lines.append(f"   - Automation Potential (D1) has a {d1_corr} impact. This means as AI gets more capable, jobs in this field {'GROW' if d1_corr=='positive' else 'SHRINK'}.")
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+            
+        print(f"  📄 Demand sensitivity report generated: {report_path}")
+
+    def plot_penetration_demand_relationship(self, figsize=(10, 5)):
+        """
+        绘制 AI渗透率(P_t) 与 最终需求(F_t/Y_t) 的纯关系图
+        展示在不考虑时间因素的情况下，技术渗透如何直接驱动需求变化
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        occupation_english = self.model.params.occupation_name
+        
+        # 标题设置
+        fig.suptitle(f'{occupation_english} - AI Penetration vs Labor Demand', 
+                    fontsize=14, fontweight='bold', y=0.96)
+
+        p = self.model.params
+        
+        # 1. 生成渗透率范围 0% - 100%
+        P_values = np.linspace(0, 1, 100)
+        
+        # 2. 计算需求倍数 (Demand Multiplier)
+        # M = F_t / Y_t = 1 + P * (Net_Impact_Factor)
+        # Net_Impact_Factor = Defense(P=1) + Enhancement(P=1) + NewMarket(P=1) - 1
+        #                   = D4 + A + D3*x - 1
+        net_impact_factor = (p.A + p.D4 + p.D3 * getattr(p, 'cost_reduction', 0.0) - 1)
+        multipliers = 1 + P_values * net_impact_factor
+        
+        # 3. 绘图
+        colors = PlotStyleConfig.COLORS
+        
+        # 绘制主关系线
+        line_color = colors['accent'] if net_impact_factor >= 0 else colors['danger']
+        ax.plot(P_values * 100, multipliers, linewidth=3, color=line_color, label='Impact Trajectory')
+        
+        # 绘制基准线 (Multiplier = 1.0)
+        ax.axhline(1.0, color='gray', linestyle='--', alpha=0.6, linewidth=1.5, label='Baseline (No Impact)')
+        
+        # 填充区域
+        ax.fill_between(P_values * 100, 1.0, multipliers, 
+                       where=(multipliers >= 1.0), color='green', alpha=0.1, label='Job Creation Zone')
+        ax.fill_between(P_values * 100, 1.0, multipliers, 
+                       where=(multipliers < 1.0), color='red', alpha=0.1, label='Job Displacement Zone')
+
+        # 4. 标记当前预测的最高渗透率点 (比如2033年)
+        current_max_P = self.results['penetration_rates'].max()
+        current_max_M = 1 + current_max_P * net_impact_factor
+        ax.scatter([current_max_P * 100], [current_max_M], color='black', s=80, zorder=5, label='2033 Forecast Point')
+        
+        # 添加注释
+        ax.annotate(f"Forecast 2033\nP={current_max_P*100:.1f}%\nMul={current_max_M:.2f}x",
+                   xy=(current_max_P * 100, current_max_M),
+                   xytext=(current_max_P * 100 - 20, current_max_M + (0.1 if net_impact_factor>0 else -0.1)),
+                   arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"),
+                   bbox=dict(boxstyle="round", fc="white", alpha=0.8), fontsize=9)
+        
+        # 5. 格式化图表
+        ax.set_xlabel('AI Penetration Rate (%)', fontsize=11)
+        ax.set_ylabel('Labor Demand Multiplier (vs Baseline)', fontsize=11)
+        ax.set_xlim(0, 100)
+        
+        # 动态调整Y轴
+        y_center = 1.0
+        max_dev = max(abs(multipliers.max() - 1), abs(multipliers.min() - 1), 0.1)
+        ax.set_ylim(1.0 - max_dev * 1.2, 1.0 + max_dev * 1.2)
+        
+        ax.grid(True, linestyle='--', alpha=0.4)
+        ax.legend(loc='best', frameon=True)
+        
+        plt.tight_layout(rect=[0, 0, 1, 0.90])
+        
+        # 保存
+        save_dir_task1 = os.path.join(self.saver.save_dir, 'task1')
+        os.makedirs(save_dir_task1, exist_ok=True)
+        filename = f"{occupation_english.replace(' ', '_').lower()}_pf_relationship"
+        paths = FigureSaver(save_dir_task1).save(fig, filename, tight=False)
+        print(f"  💾 Pure P-F Relationship plot saved: {paths[0]}")
+        
+        # 生成报告
+        self.generate_pf_relationship_report(net_impact_factor, current_max_P, current_max_M, save_dir_task1)
+        
+        return fig
+
+    def generate_pf_relationship_report(self, slope, max_p, max_m, save_dir):
+        """生成 P-F 关系解读报告"""
+        career_name = self.model.params.occupation_name
+        report_path = os.path.join(save_dir, f"{career_name.replace(' ', '_').lower()}_pf_relationship_report.txt")
+        
+        lines = []
+        lines.append(f"Direct Sensitivity Analysis: AI Penetration (P) vs Labor Demand (F) for {career_name}")
+        lines.append("=" * 70)
+        lines.append(f"Analysis Type: Pure Functional Relationship (Time-Independent)")
+        lines.append("")
+        
+        lines.append("1. Mathematical Relationship")
+        lines.append("-" * 40)
+        lines.append(f"   Multiplier Formula: M = 1 + Slope * P")
+        lines.append(f"   Net Impact Slope (Beta): {slope:+.4f}")
+        lines.append("")
+        
+        lines.append("2. Interpretation")
+        lines.append("-" * 40)
+        if slope > 0:
+            lines.append(f"   Type: POSITIVE Correlation (AI Creation Effect)")
+            lines.append(f"   Meaning: For every 1% increase in AI penetration, labor demand INCREASES by {slope*100:.2f}% relative to baseline.")
+        elif slope < 0:
+            lines.append(f"   Type: NEGATIVE Correlation (AI Displacement Effect)")
+            lines.append(f"   Meaning: For every 1% increase in AI penetration, labor demand DECREASES by {abs(slope)*100:.2f}% relative to baseline.")
+        else:
+            lines.append(f"   Type: NEUTRAL")
+            lines.append(f"   Meaning: AI penetration has no net effect on total labor demand quantity.")
+            
+        lines.append("")
+        lines.append("3. Forecast Context (2033)")
+        lines.append("-" * 40)
+        lines.append(f"   Predicted Max Penetration: {max_p*100:.1f}%")
+        lines.append(f"   Resulting Demand Multiplier: {max_m:.3f}x")
+        lines.append(f"   Net Outcome: {'Gain' if max_m > 1 else 'Loss'} of {abs(max_m-1)*100:.1f}% jobs compared to 'No-AI' scenario.")
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+            
+        print(f"  📄 P-F Relationship report generated: {report_path}")
+
+    def plot_growth_rate_sensitivity(self, figsize=(8, 5)):
+        """
+        绘制基础增长率 r (from GM(1,1)) 与 最终需求 F_t 的灵敏度分析 - 分开输出
+        r 代表自然增长趋势，决定了 Y_t 的基数
+        """
+        occupation_english = self.model.params.occupation_name
+        r_data = self.results
+        baseline_r = r_data['growth_rate']
+        
+        save_dir_task1 = os.path.join(self.saver.save_dir, 'task1')
+        os.makedirs(save_dir_task1, exist_ok=True)
+        saver_task1 = FigureSaver(save_dir_task1)
+        
+        # 1. 定义变动范围：基准值 +/- 50% 或 +/- 0.05
+        # 如果基准 r 很小 (<0.02)，使用绝对变动；否则使用相对变动
+        if abs(baseline_r) < 0.02:
+            r_range = np.linspace(baseline_r - 0.03, baseline_r + 0.03, 7)
+        else:
+            r_range = np.linspace(baseline_r * 0.5, baseline_r * 1.5, 7)
+            
+        r_range = np.sort(np.unique(np.append(r_range, baseline_r))) # 确保包含基准值
+        
+        final_demands_by_r = []
+        colors = PlotStyleConfig.get_palette(len(r_range))
+        
+        # --- 图1: 时间序列预测轨迹 ---
+        fig1, ax1 = plt.subplots(figsize=figsize)
+        fig1.suptitle(f'{occupation_english} - Growth Rate Sensitivity (Trajectories)', fontsize=14, fontweight='bold', y=0.96)
+        
+        # 2. 循环计算
+        for i, r_val in enumerate(r_range):
+            # 设置 override
+            self.model.params.r_override = r_val
+            
+            # 运行预测
+            temp_res = self.model.predict_evolution(verbose=False)
+            demands = temp_res['final_demands']
+            final_demands_by_r.append(demands[-1])
+            
+            # 绘线
+            label = f'r={r_val:.3f}' + (' (Base)' if r_val == baseline_r else '')
+            style = '--' if r_val == baseline_r else '-'
+            width = 3 if r_val == baseline_r else 1.5
+            color = 'black' if r_val == baseline_r else colors[i]
+            
+            ax1.plot(r_data['future_years'], demands, linestyle=style, linewidth=width, color=color, label=label)
+            
+        # 恢复
+        self.model.params.r_override = None
+        
+        ax1.set_title('Forecast Multi-Scenarios', fontweight='bold', fontsize=11)
+        ax1.set_xlabel('Year', fontsize=10)
+        ax1.set_ylabel('Employment (10,000s)', fontsize=10)
+        ax1.legend(fontsize=9, loc='upper left')
+        ax1.grid(True, alpha=0.3)
+        
+        plt.tight_layout(rect=[0, 0, 1, 0.92])
+        filename_traj = f"{occupation_english.replace(' ', '_').lower()}_growth_rate_sensitivity_traj"
+        paths_traj = saver_task1.save(fig1, filename_traj, tight=False)
+        print(f"  💾 Growth Rate Trajectories plot saved: {paths_traj[0]}")
+        
+        # --- 图2: 最终需求 vs 增长率r ---
+        fig2, ax2 = plt.subplots(figsize=figsize)
+        fig2.suptitle(f'{occupation_english} - Growth Rate Sensitivity (Values)', fontsize=14, fontweight='bold', y=0.96)
+        
+        # 绘制散点图
+        ax2.plot(r_range, final_demands_by_r, 'o-', color=PlotStyleConfig.COLORS['primary'], linewidth=2)
+        
+        # 标记基准点
+        baseline_idx = np.where(r_range == baseline_r)[0][0]
+        ax2.plot(baseline_r, final_demands_by_r[baseline_idx], 'r*', markersize=12, label='Baseline')
+        
+        ax2.set_title('Impact on 2033 Forecast', fontweight='bold', fontsize=11)
+        ax2.set_xlabel('Natural Growth Rate (r)', fontsize=10)
+        ax2.set_ylabel('Final Demand 2033 (10,000s)', fontsize=10)
+        ax2.grid(True, alpha=0.3)
+        ax2.legend()
+        
+        # 添加相关性说明
+        slope = (final_demands_by_r[-1] - final_demands_by_r[0]) / (r_range[-1] - r_range[0])
+        ax2.text(0.05, 0.9, f"Sensitivity Slope: {slope:.1f}\n(Unit Demand / Unit Rate)", 
+                transform=ax2.transAxes, bbox=dict(facecolor='white', alpha=0.8), fontsize=9)
+        
+        plt.tight_layout(rect=[0, 0, 1, 0.92])
+        filename_vals = f"{occupation_english.replace(' ', '_').lower()}_growth_rate_sensitivity_vals"
+        paths_vals = saver_task1.save(fig2, filename_vals, tight=False)
+        print(f"  💾 Growth Rate Values plot saved: {paths_vals[0]}")
+        
+        return fig1, fig2
+
+    def plot_dimension_radar(self, figsize=(6, 6)):
         """替代实现：等距彩色环围绕雷达主体，雷达主体缩小"""
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111, polar=True)
 
         occupation_english = self.model.params.occupation_name
         fig.suptitle(f'{occupation_english} - Dimension Profile Radar', fontsize=16, fontweight='bold')
-        fig.text(0.5, 0.95, 'Four Key Dimensions Analysis', ha='center', fontsize=12, style='italic')
 
         categories = ['Automation\nPotential (D1)', 'Skill\nEvolution (D2)',
                       'Market\nElasticity (D3)', 'Human\nConstraints (D4)']
@@ -989,7 +1528,7 @@ class AICareerVisualization:
 
         # 保存逻辑
         career_filename = f"{occupation_english.replace(' ', '_').lower()}_dimension_radar"
-        paths = self.saver.save(fig, career_filename)
+        paths = self.saver.save(fig, career_filename, tight=False)
         return fig
 
 def plot_career_comparison(all_results, save_dir='./figures'):
@@ -1002,10 +1541,8 @@ def plot_career_comparison(all_results, save_dir='./figures'):
     if not all_results:
         return
 
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle('Multi-Career AI Impact Comparative Analysis', fontsize=18, fontweight='bold')
-    fig.text(0.5, 0.95, 'Historical Trends, Future Predictions, and Technology Penetration Across Professions',
-            ha='center', fontsize=12, style='italic')
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+    fig.suptitle('Multi-Career AI Impact Comparative Analysis', fontsize=16, fontweight='bold', y=0.98)
 
     careers = list(all_results.keys())
     colors = PlotStyleConfig.get_palette(len(careers))
@@ -1061,7 +1598,10 @@ def plot_career_comparison(all_results, save_dir='./figures'):
     for career in careers:
         r = all_results[career]
         hist_2023 = r['historical_data'][-1]  # 2023年数据
-        pred_2030 = r['final_demands'][6]     # 2030年预测 (2024+6=2030)
+        # 修正: r['final_demands']是从2024开始的
+        # 索引0 -> 2024, ..., 索引6 -> 2030
+        idx_2030 = 6 if len(r['final_demands']) > 6 else -1
+        pred_2030 = r['final_demands'][idx_2030]     # 2030年预测
         growth = (pred_2030 - hist_2023) / hist_2023 * 100
         growth_rates.append(growth)
         career_english = career
@@ -1091,7 +1631,7 @@ def plot_career_comparison(all_results, save_dir='./figures'):
 
     # 保存图片
     saver = FigureSaver(save_dir)
-    paths = saver.save(fig, 'career_comparison_analysis')
+    paths = saver.save(fig, 'career_comparison_analysis', tight=False)
     print(f"  💾 Career comparison analysis plot saved: {paths[0]}")
 
 
@@ -1174,6 +1714,22 @@ def run_multi_career_workflow(csv_path='./就业人数.csv'):
         # 图6: 维度雷达图
         print("    🎨 绘制维度雷达图...")
         viz.plot_dimension_radar()
+
+        # 图7: AI渗透率灵敏度分析
+        print("    🎨 绘制AI渗透率灵敏度分析图...")
+        viz.plot_penetration_sensitivity()
+
+        # 图8: 最终需求灵敏度分析 (Tornado)
+        print("    🎨 绘制最终需求灵敏度分析图 (Tornado)...")
+        viz.plot_demand_sensitivity_tornado()
+
+        # 图9: AI渗透率与需求纯关系分析
+        print("    🎨 绘制AI渗透率与需求纯关系分析图...")
+        viz.plot_penetration_demand_relationship()
+
+        # 图10: 增长率r灵敏度分析
+        print("    🎨 绘制增长率r灵敏度分析图...")
+        viz.plot_growth_rate_sensitivity()
 
         # 保存结果
         all_results[career] = results

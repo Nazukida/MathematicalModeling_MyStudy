@@ -1,0 +1,19 @@
+Direct Sensitivity Analysis: AI Penetration (P) vs Labor Demand (F) for software_engineer
+======================================================================
+Analysis Type: Pure Functional Relationship (Time-Independent)
+
+1. Mathematical Relationship
+----------------------------------------
+   Multiplier Formula: M = 1 + Slope * P
+   Net Impact Slope (Beta): +0.6415
+
+2. Interpretation
+----------------------------------------
+   Type: POSITIVE Correlation (AI Creation Effect)
+   Meaning: For every 1% increase in AI penetration, labor demand INCREASES by 64.15% relative to baseline.
+
+3. Forecast Context (2033)
+----------------------------------------
+   Predicted Max Penetration: 84.9%
+   Resulting Demand Multiplier: 1.545x
+   Net Outcome: Gain of 54.5% jobs compared to 'No-AI' scenario.

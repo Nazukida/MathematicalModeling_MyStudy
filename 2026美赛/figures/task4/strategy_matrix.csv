@@ -1,0 +1,5 @@
+﻿Cluster,Strategy Type,Size Decision,Size Urgency,Curriculum Action,AI Credits,Elasticity Action,Risk Level
+0,Aggressive Reformer,Maintain,Low,Gradual AI Integration,Increase to 8-15% of total,Leverage Transferability,Low - Strong safety net
+1,Stable Transitioner,Maintain,Low,Selective AI Tools,Maintain at 3-8% of total,Leverage Transferability,Low - Strong safety net
+2,Survival Challenger,Contract,High,Intensive AI + Ethics Bundle,Increase to 15-25% of total,Emergency Diversification,High - Critical intervention needed
+3,Resource Defender,Expand,Medium,Selective AI Tools,Maintain at 3-8% of total,Emergency Diversification,High - Critical intervention needed

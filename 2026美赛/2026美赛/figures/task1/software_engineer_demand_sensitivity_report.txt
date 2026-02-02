@@ -1,0 +1,33 @@
+Employment Demand (F_t) Sensitivity Analysis Report for software_engineer
+======================================================================
+Baseline Final Demand (2033): 535.57 (10,000s)
+Analysis Method: One-At-A-Time (OAAT) perturbation (+/- 10%)
+
+1. Parameter Ranking (By Impact Magnitude)
+----------------------------------------
+  #1 A: AI Enhance. (-> F_t)
+     Range: 76.53 (from 497.30 to 573.83)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+  #2 D1: Auto. Potential (-> P_t)
+     Range: 37.77 (from 516.68 to 554.45)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+  #3 D4: Human Const. (-> F_t)
+     Range: 16.48 (from 527.33 to 543.81)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+  #4 D3: Market Elast. (-> F_t)
+     Range: 3.62 (from 533.76 to 537.38)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+  #5 D2: Evol. Speed (-> P_t)
+     Range: 0.29 (from 535.38 to 535.67)
+     Correlation: Positive (Increase Param -> Increase Demand)
+
+2. Key Insights
+----------------------------------------
+   - The most critical driver is A: AI Enhance. (-> F_t).
+     A 10% change in this parameter causes a 14.3% swing in final employment.
+   - AI Enhancement (A) plays a significant role, confirming that the productivity boost factor is crucial for this model.
+   - Automation Potential (D1) has a positive impact. This means as AI gets more capable, jobs in this field GROW.

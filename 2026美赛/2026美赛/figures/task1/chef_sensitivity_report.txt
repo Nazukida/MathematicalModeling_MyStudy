@@ -1,0 +1,17 @@
+AI Penetration Rate Sensitivity Analysis Report for chef
+============================================================
+Date: 2026-02-03 04:27:08
+
+1. Analysis of Automation Potential (D1)
+----------------------------------------
+   - Parameter Range: D1 varies from 0.00 to 0.20
+   - Effect on Saturation: As D1 increases, the maximum AI penetration rate increases.
+   - Sensitivity: A change of 0.20 in D1 results in a 16.70% difference in peak penetration.
+   - Interpretation: Occupations with higher automation potential will see AI completely taking over tasks much earlier and to a greater extent.
+
+2. Analysis of Skill Evolution Speed (D2)
+----------------------------------------
+   - Parameter Range: D2 varies from 0.00 to 0.20
+   - Effect on Speed: High D2 accelerates the S-curve, causing the 'steep' adoption phase to occur sooner.
+   - Sensitivity: At the mid-point (2029), increasing D2 changes penetration from 6.2% to 7.9%.
+   - Interpretation: For fields where technology evolves rapidly (High D2), the window for adaptation is much smaller.

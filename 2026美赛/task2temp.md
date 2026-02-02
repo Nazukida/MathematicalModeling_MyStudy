@@ -73,7 +73,7 @@ $$ C_{trans}(\mathbf{X}) = 0.05 \cdot \sum \left( \frac{|x_i - x_{old}|}{x_{old}
 ### 3.3.3 内部参数设计：权重矩阵
 针对不同学校设定的权重 ($w_i$)，反映了其办学定位：
 
-| School | Base | AI | Ethics | Project | Design Logic |
+| School | Core | AI | Human | Cross | Design Logic |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **CMU** | **0.40** | 0.25 | 0.10 | 0.25 | Research-oriented universities, emphasizing fundamentals and AI theories |
 | **CCAD** | 0.35 | 0.15 | 0.10 | **0.40** | Art school, heavy project practice |

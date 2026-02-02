@@ -382,22 +382,30 @@ class FigureSaver:
     """图表保存工具类"""
 
     def __init__(self, save_dir='./figures', format='png', prefix=''):
-        self.save_dir = save_dir
+        self.save_dir = os.path.abspath(save_dir)
         self.format = format
         self.prefix = prefix
-        os.makedirs(save_dir, exist_ok=True)
+        os.makedirs(self.save_dir, exist_ok=True)
 
     def save(self, fig, filename, formats=None, tight=True):
         if formats is None:
             formats = [self.format]
         if tight:
-            fig.tight_layout()
+            try:
+                fig.tight_layout()
+            except:
+                pass
         paths = []
         full_filename = f"{self.prefix}_{filename}" if self.prefix else filename
+        # Sanitize filename
+        full_filename = "".join([c for c in full_filename if c.isalnum() or c in ('_', '-', ' ')])
+        
         for fmt in formats:
             path = os.path.join(self.save_dir, f"{full_filename}.{fmt}")
             fig.savefig(path, dpi=300, bbox_inches='tight')
             paths.append(path)
+        plt.close(fig)
+        return paths
         return paths
 
 
@@ -1183,8 +1191,8 @@ class EducationDecisionVisualization:
         ax.set_facecolor('#FAFBFC')
         
         fig.suptitle(f'{self.model.params.school_name} - Enrollment Response Analysis',
-                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
-        ax.set_title('Supply vs Demand Adjustment Model (Sub-model 1)', fontsize=12, style='italic', pad=10)
+                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.98)
+        ax.set_title('Supply vs Demand Adjustment Model (Sub-model 1)', fontsize=12, style='italic', pad=15)
 
         r = self.results['enrollment_response']
         colors = [PlotStyleConfig.COLORS['primary'], PlotStyleConfig.COLORS['accent'], PlotStyleConfig.COLORS['secondary']]
@@ -1235,9 +1243,74 @@ class EducationDecisionVisualization:
                bbox=dict(boxstyle='round,pad=0.5', facecolor='white', 
                         edgecolor=PlotStyleConfig.COLORS['primary'], linewidth=2, alpha=0.9))
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'enrollment_response_analysis')
         print(f"  💾 Enrollment response plot saved: {paths[0]}")
+
+    def plot_lambda_sensitivity(self, figsize=(10, 7)):
+        """
+        绘制 λ (Admin Capacity) 对招生调整量的灵敏度分析 - 单独输出
+        X轴: 压力指数 Γ_t, Y轴: 调整量 ΔE
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.set_facecolor('#FAFBFC')
+
+        school_name = self.model.params.school_name
+        fig.suptitle(f'{school_name} - Admin Capacity (λ) Sensitivity', 
+                     fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
+        ax.set_title('Impact of λ on Enrollment Adjustment (ΔE)', 
+                     fontsize=12, style='italic', pad=10)
+
+        # 1. 准备数据
+        E_current = self.model.params.current_graduates
+        current_lambda = self.model.params.lambda_admin
+        
+        # 定义 Γ_t 范围 (-1.0 到 2.0)
+        gamma_range = np.linspace(-1.0, 2.0, 100)
+        
+        # 定义 λ 测试值
+        lambdas_to_test = [0.05, 0.10, 0.15, 0.20, 0.25]
+        # 确保当前值在列表中
+        if not any(abs(x - current_lambda) < 1e-4 for x in lambdas_to_test):
+            lambdas_to_test.append(current_lambda)
+        lambdas_to_test.sort()
+        
+        colors = PlotStyleConfig.get_palette(len(lambdas_to_test))
+
+        # 2. 绘制曲线
+        for i, lam in enumerate(lambdas_to_test):
+            # ΔE = E * λ * tanh(Γ)
+            delta_E = E_current * lam * np.tanh(gamma_range)
+            
+            # 样式区分
+            is_current = (abs(lam - current_lambda) < 1e-4)
+            linewidth = 3.5 if is_current else 2
+            linestyle = '-' if is_current else '--'
+            alpha = 1.0 if is_current else 0.7
+            label = f'λ = {lam:.3f} (Current)' if is_current else f'λ = {lam:.2f}'
+            color = PlotStyleConfig.SCHOOL_COLORS.get(school_name, 'red') if is_current else colors[i]
+            
+            ax.plot(gamma_range, delta_E, linewidth=linewidth, linestyle=linestyle, 
+                    color=color, alpha=alpha, label=label)
+
+        # 3. 装饰图表
+        ax.axhline(0, color='gray', linestyle='-', alpha=0.3)
+        ax.axvline(0, color='gray', linestyle='-', alpha=0.3)
+        
+        ax.set_xlabel('Pressure Index (Γ_t)', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Enrollment Adjustment (ΔE)', fontsize=12, fontweight='bold')
+        
+        # 标注公式 (使用LaTeX会导致某些环境报错，尽量简单)
+        formula_text = r"$\Delta E = E_{current} \cdot \lambda \cdot \tanh(\Gamma_t)$"
+        ax.text(0.05, 0.85, formula_text, transform=ax.transAxes, fontsize=14,
+               bbox=dict(facecolor='white', alpha=0.9, edgecolor='gray', boxstyle='round,pad=0.5'))
+
+        ax.legend(loc='lower right', fontsize=10, frameon=True, fancybox=True)
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        paths = self.saver.save(fig, 'lambda_sensitivity_analysis')
+        print(f"  💾 Lambda sensitivity plot saved: {paths[0]}")
 
     def plot_curriculum_optimization(self, figsize=(14, 10)):
         """
@@ -1259,7 +1332,7 @@ class EducationDecisionVisualization:
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
         current = [self.model.params.current_curriculum.get(k, 0) for k in keys]
         optimal = [r['optimal_curriculum'].get(k, 0) for k in keys]
-        labels = ['Base', 'AI', 'Ethics', 'Proj']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         
         x = np.arange(len(labels))
         width = 0.35
@@ -1301,7 +1374,7 @@ class EducationDecisionVisualization:
         # 计算各部分效用 (使用 sqrt 逻辑保持一致)
         sizes = [base_w.get(k, 0) * np.sqrt(r['optimal_curriculum'].get(k, 0)) * 10 for k in keys]
         # keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        labels_donut = ['Base', 'AI', 'Ethics', 'Proj']
+        labels_donut = ['Core', 'AI', 'Human', 'Cross']
         colors_donut = [colors[0], colors[1], colors[2], colors[3]]
         
         wedges, texts, autotexts = ax2.pie(sizes, labels=labels_donut, colors=colors_donut, 
@@ -1361,7 +1434,7 @@ class EducationDecisionVisualization:
         ax4.legend(loc='upper left')
         ax4.grid(True, alpha=0.3)
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'curriculum_optimization_analysis')
         print(f"  💾 Curriculum optimization plot saved: {paths[0]}")
 
@@ -1411,8 +1484,8 @@ class EducationDecisionVisualization:
         
         # 标题
         fig.suptitle(f'{self.model.params.school_name} - Career Path Elasticity Analysis',
-                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
-        ax.set_title('Similarity to Origin Career (Higher = Easier Transition)', fontsize=12, style='italic', pad=10)
+                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.98)
+        ax.set_title('Similarity to Origin Career (Higher = Easier Transition)', fontsize=12, style='italic', pad=15)
         
         # 添加背景区域
         ax.axvspan(0.9, 1.1, alpha=0.1, color=PlotStyleConfig.COLORS['accent'])
@@ -1420,7 +1493,7 @@ class EducationDecisionVisualization:
         ax.axvspan(0, 0.5, alpha=0.1, color=PlotStyleConfig.COLORS['danger'])
         
         ax.grid(True, axis='x', alpha=0.3)
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
 
         paths = self.saver.save(fig, 'career_elasticity_analysis')
         print(f"  💾 Career elasticity plot saved: {paths[0]}")
@@ -1562,10 +1635,10 @@ class EducationDecisionVisualization:
             ax.set_ylim(y_min - 0.05 * y_range, y_max + 0.05 * y_range)
         
         fig.suptitle(f'{self.model.params.school_name} - Simulated Annealing Optimization',
-                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
-        ax.set_title('Convergence Process of Curriculum Optimization', fontsize=12, style='italic', pad=10)
+                    fontsize=16, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.98)
+        ax.set_title('Convergence Process of Curriculum Optimization', fontsize=12, style='italic', pad=15)
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'sa_convergence_plot')
         print(f"  💾 SA convergence plot saved: {paths[0]}")
 
@@ -1576,7 +1649,7 @@ class EducationDecisionVisualization:
         """
         fig, ax = plt.subplots(figsize=figsize)
         fig.suptitle(f'{self.model.params.school_name} - Resource Competition Analysis',
-                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
+                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.98)
 
         # 获取权重 (本地估算)
         p = self.model.params
@@ -1677,7 +1750,7 @@ class EducationDecisionVisualization:
         for spine in ax.spines.values():
             spine.set_edgecolor(PlotStyleConfig.COLORS['grid'])
         
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         paths = self.saver.save(fig, 'resource_competition_analysis')
         print(f"  💾 Resource competition plot saved: {paths[0]}")
 
@@ -1790,7 +1863,7 @@ class EducationDecisionVisualization:
         
         schools = ['CMU', 'CCAD', 'CIA']
         course_types = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        display_names = ['Base', 'AI', 'Ethics', 'Project']
+        display_names = ['Core', 'AI', 'Human', 'Cross']
         
         # 柔和淡雅的配色方案 (Morandi/Pastel styles)
         # Base(Blue), AI(Orange), Ethics(Green), Project(Purple)
@@ -2029,28 +2102,6 @@ class EducationDecisionVisualization:
         paths = saver_all.save(fig, 'ahp_radar_analysis')
         print(f"  💾 AHP radar analysis plot saved: {paths[0]}")
 
-    def plot_ahp_summary_table(self, figsize=(14, 7)):
-        """
-        绘制AHP分析汇总表格 - 专业论文展示格式
-        """
-        fig, ax = plt.subplots(figsize=figsize)
-        fig.patch.set_facecolor('white')
-        ax.set_facecolor('white')
-        ax.axis('off')
-        
-        # 专业标题
-        fig.suptitle('AHP Analysis Summary: Administrative Adjustment Coefficient (λ)',
-                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.96)
-        fig.text(0.5, 0.90, 'Hierarchical Decision Model for University Capacity Assessment', 
-                ha='center', fontsize=12, style='italic', color=PlotStyleConfig.COLORS['neutral'])
-
-        # 获取AHP数据
-        ahp = get_ahp_calculator()
-        
-        # 专业表头
-        
-        # 表格数据实现略... 这里保留原有结构。
-        pass
 
     def plot_sensitivity_analysis(self, figsize=(14, 6)):
         """
@@ -2106,7 +2157,7 @@ class EducationDecisionVisualization:
         paths = self.saver.save(fig, 'sensitivity_analysis')
         print(f"  💾 Sensitivity analysis plot saved: {paths[0]}")
     
-    def plot_ahp_summary_table(self, figsize=(14, 7)):
+    def plot_ahp_summary_table(self, figsize=(14, 5)):
         """
         绘制AHP分析汇总表格 - 专业论文展示格式
         """
@@ -2117,8 +2168,8 @@ class EducationDecisionVisualization:
         
         # 专业标题
         fig.suptitle('AHP Analysis Summary: Administrative Adjustment Coefficient (λ)',
-                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.96)
-        fig.text(0.5, 0.90, 'Hierarchical Decision Model for University Capacity Assessment', 
+                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'], y=0.98)
+        fig.text(0.5, 0.92, 'Hierarchical Decision Model for University Capacity Assessment', 
                 ha='center', fontsize=12, style='italic', color=PlotStyleConfig.COLORS['neutral'])
 
         # 获取AHP数据
@@ -2155,69 +2206,23 @@ class EducationDecisionVisualization:
             row_colors.append(school_row_colors.get(school, 'white'))
         
         # 创建专业表格
+        # 使用 bbox 稍微约束一下垂直位置，配合 tight_layout
+        # box=[left, bottom, width, height]
+        # table = ax.table(cellText=table_data, colLabels=columns, loc='center', cellLoc='center')
+        # 改用 bbox 来强制定位，可以更精确控制 "上下高度收窄"
+        # 居中显示，高度占比设为 0.5 左右，留出上下空间给标题和脚注
         table = ax.table(cellText=table_data, colLabels=columns, loc='center',
-                        cellLoc='center', colWidths=[0.15, 0.15, 0.15, 0.15, 0.15, 0.2],
-                        rowColours=row_colors)
+                        cellLoc='center', bbox=[0.02, 0.25, 0.96, 0.55])
         
-        # 美化表格
-        table.auto_set_font_size(False)
-        table.set_fontsize(11)
-        table.scale(1, 2)
-        
-        for (row, col), cell in table.get_celld().items():
-            if row == 0:
-                cell.set_text_props(weight='bold', color='white')
-                cell.set_facecolor(PlotStyleConfig.COLORS['dark'])
-            else:
-                cell.set_text_props(color='#333333')
-            cell.set_edgecolor('#DDDDDD')
-            cell.set_linewidth(1)
-
-        plt.tight_layout(rect=[0, 0, 1, 0.88])
-        saver_all = FigureSaver('./figures')
-        paths = saver_all.save(fig, 'ahp_summary_table')
-        print(f"  💾 AHP summary table saved: {paths[0]}")
-        columns = ['University', 'C1: Strategic\nScalability\n(W=0.4)', 
-                   'C2: Physical\nIndependence\n(W=0.4)', 
-                   'C3: Service\nElasticity\n(W=0.2)', 
-                   'Composite\nScore (Z)', 'Final λ\n(Normalized)']
-        
-        # 学校行颜色
-        school_row_colors = {
-            'CMU': '#FFE4E6',
-            'CCAD': '#FFF3E0',
-            'CIA': '#E3F2FD'
-        }
-        
-        table_data = []
-        row_colors = []
-        for school in ahp.alternatives:
-            idx = ahp.alternatives.index(school)
-            composite = sum([ahp.criteria_weights[i] * ahp.scores[list(ahp.scores.keys())[i]][idx] 
-                           for i in range(3)])
-            row = [
-                school,
-                f"{ahp.scores['C1_Strategic'][idx]:.4f}",
-                f"{ahp.scores['C2_Physical'][idx]:.4f}",
-                f"{ahp.scores['C3_Service'][idx]:.4f}",
-                f"{composite:.4f}",
-                f"{ahp.final_lambdas[school]:.4f} ({ahp.final_lambdas[school]*100:.1f}%)"
-            ]
-            table_data.append(row)
-            row_colors.append(school_row_colors.get(school, 'white'))
-        
-        # 创建专业表格
-        table = ax.table(cellText=table_data, colLabels=columns, loc='center',
-                        cellLoc='center')
         table.auto_set_font_size(False)
         table.set_fontsize(12)
-        table.scale(1.3, 2.2)
+        # table.scale(1.2, 1.5) # bbox 控制了大小，scale 可能不再需要或者仅仅微调内容
         
         # 设置表头样式
         for i in range(len(columns)):
             table[(0, i)].set_facecolor(PlotStyleConfig.COLORS['dark'])
             table[(0, i)].set_text_props(weight='bold', color='white', fontsize=10)
-            table[(0, i)].set_height(0.15)
+            # height controlled by bbox now distribution
         
         # 设置数据行样式
         for row_idx, school in enumerate(ahp.alternatives):
@@ -2237,17 +2242,18 @@ class EducationDecisionVisualization:
                     cell.set_text_props(weight='bold')
         
         # 添加一致性检验说明
+        # 紧贴图表下方，y=0.15 (Table bottom is 0.25)
         cr_info = f"Consistency Check: All CR < 0.1 ✓"
-        ax.text(0.5, 0.08, cr_info, transform=ax.transAxes, ha='center', fontsize=11,
+        ax.text(0.5, 0.12, cr_info, transform=ax.transAxes, ha='center', fontsize=11,
                fontweight='bold', color=PlotStyleConfig.COLORS['accent'],
-               bbox=dict(boxstyle='round,pad=0.5', facecolor='#E8F5E9', 
-                        edgecolor=PlotStyleConfig.COLORS['accent'], linewidth=2))
+               bbox=dict(boxstyle='round,pad=0.4', facecolor='#E8F5E9', 
+                        edgecolor=PlotStyleConfig.COLORS['accent'], linewidth=1.5))
 
-        plt.tight_layout(rect=[0, 0.1, 1, 0.88])
+        # tight_layout rect=[left, bottom, right, top]
+        plt.tight_layout(rect=[0, 0.02, 1, 0.98])
         saver_all = FigureSaver('./figures/task2_2')
-        paths = saver_all.save(fig, 'ahp_summary_table')
+        paths = saver_all.save(fig, 'ahp_summary_table', tight=False)
         print(f"  💾 AHP summary table saved: {paths[0]}")
-
     def plot_model_comparison(self, baseline_results, constrained_results, figsize=(16, 10)):
         """
         绘制原模型 vs 约束模型的对比图
@@ -2297,7 +2303,7 @@ class EducationDecisionVisualization:
         ax1.set_title('Curriculum Allocation Comparison (High-AI Scenario)', fontweight='bold', fontsize=14)
         
         keys = ['x_base', 'x_AI', 'x_ethics', 'x_proj']
-        labels = ['Base', 'AI', 'Ethics', 'Project']
+        labels = ['Core', 'AI', 'Human', 'Cross']
         baseline_vals = [c_high_free['optimal_curriculum'][k] for k in keys]
         constrained_vals = [c_high_con['optimal_curriculum'][k] for k in keys]
         
@@ -2440,7 +2446,7 @@ class EducationDecisionVisualization:
         
         plt.tight_layout(rect=[0, 0.02, 1, 0.93])
         saver = FigureSaver('./figures/task2_2')
-        paths = saver.save(fig, f'{self.school}_model_comparison')
+        paths = saver.save(fig, f'{self.school}_model_comparison', tight=False)
         print(f"  💾 Model comparison plot saved: {paths[0]}")
         
     def plot_constraint_sensitivity(self, figsize=(16, 5)):
@@ -2555,7 +2561,7 @@ class EducationDecisionVisualization:
         
         plt.tight_layout(rect=[0, 0, 1, 0.92])
         saver = FigureSaver('./figures/task2_2')
-        paths = saver.save(fig, f'{self.school}_constraint_sensitivity')
+        paths = saver.save(fig, f'{self.school}_constraint_sensitivity', tight=False)
         print(f"  💾 Constraint sensitivity plot saved: {paths[0]}")
 
     def plot_utility_vs_constraint_tradeoff(self, figsize=(18, 12)):
@@ -2803,7 +2809,7 @@ class EducationDecisionVisualization:
         
         plt.tight_layout(rect=[0, 0, 1, 0.93])
         saver = FigureSaver('./figures/task2_2')
-        paths = saver.save(fig, f'{self.school}_utility_constraint_tradeoff')
+        paths = saver.save(fig, f'{self.school}_utility_constraint_tradeoff', tight=False)
         print(f"  💾 Utility vs Constraint trade-off plot saved: {paths[0]}")
 
 
@@ -2895,6 +2901,10 @@ def run_education_decision_workflow():
         # 图3: 招生响应分析
         print(f"\n  🎨 绘制{school}招生响应分析图...")
         viz.plot_enrollment_response()
+
+        # 图3b: λ灵敏度分析
+        print(f"\n  🎨 绘制{school} λ灵敏度分析图...")
+        viz.plot_lambda_sensitivity()
 
         # 图4: 课程优化分析
         print(f"\n  🎨 绘制{school}课程优化分析图...")

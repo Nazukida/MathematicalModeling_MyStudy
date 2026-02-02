@@ -1,0 +1,877 @@
+\documentclass{mcmthesis}
+% ============================================================
+% 基本信息配置 (Basic Configuration)
+% ============================================================
+\mcmsetup{
+  tcn = 2618153,            % Team Control Number
+  problem = F,           % Problem Chosen (A/B/C/D/E/F)
+  sheet = true,          % Summary Sheet（首页）
+  titleinsheet = true,   % 标题显示在首页
+  keywords = false,      % 关闭 Keywords 行
+  titlepage = false,     % 关闭正文重复标题页（关键）
+  abstract = false       % 关闭正文重复摘要（关键）
+}
+
+% ============================================================
+% 宏包加载区 (Packages)
+% ============================================================
+\usepackage{indentfirst} % 解决所有章节首行缩进问题
+\usepackage{graphicx}    % 插入图片的核心宏包
+\usepackage{float}       % 必须有这个，[H] 才能让图片固定在当前位置
+\usepackage{url}         % 参考文献中如果包含 URL 网址，必须加这个
+\usepackage{makecell}
+\usepackage{lastpage}
+\usepackage{tocloft}
+\usepackage{tabularx}  % 必须加：用于让表格自动填满页面宽度
+
+% 设置 Section 条目的字体大小
+\renewcommand{\cftsecfont}{\footnotesize\bfseries}
+\renewcommand{\cftsecpagefont}{\footnotesize\bfseries}
+% 设置 Subsection 条目的字体大小
+\renewcommand{\cftsubsecfont}{\footnotesize}
+\renewcommand{\cftsubsecpagefont}{\footnotesize}
+
+% 进一步压缩行间距（设置为 0pt 甚至负数）
+\setlength{\cftbeforesecskip}{-1pt}
+\setlength{\cftbeforesubsecskip}{-2pt}
+\setlength{\parskip}{0.4ex plus 0.2ex minus 0.1ex} % 稍微收紧段落间距
+\setlength{\abovedisplayskip}{3pt}
+\setlength{\belowdisplayskip}{3pt}
+\usepackage{caption}
+\captionsetup{font=small, skip=5pt} % 缩小标题字体并紧缩间距
+
+
+% ============================================================
+% 全局设置 (Global Settings)
+% ============================================================
+% 告诉 LaTeX 自动去名为 figure 的文件夹里找图片
+\graphicspath{{figure/}} 
+
+% 设置全局缩进为 2 个字符宽度
+\setlength{\parindent}{2em}
+
+\title{Governing Education in the Age of Generative AI:
+A Model-Based Framework for Labor and Learning}
+\author{}   % 不写队员/学校
+\date{}
+
+\usepackage{geometry}
+\begin{document}
+
+% ============================================================
+% Summary（会自动填到 Summary Sheet）
+% ============================================================
+\begin{abstract}
+% 建议 400--500 词；不分段；不写公式；强调：问题—模型—结果—结论—意义
+\hspace*{2em}Generative Artificial Intelligence (Gen-AI) has become an inescapable resource shaping both labor markets and educational systems. This paper develops a data-driven, policy-oriented modeling framework to support post-secondary institutions in adjusting enrollment and curriculum design under technological uncertainty.
+
+Three representative careers are examined: Software Engineer (STEM), Chef (skilled trade), and Graphic Designer (arts). Using occupational outlook data from the BLS and task-level attributes from O*NET, we construct a Grey--Logistic Coupled Evolutionary Model to simulate labor demand under Gen-AI penetration, with Monte Carlo simulation used to capture parameter uncertainty. The results reveal clear divergence across occupations: software engineering exhibits demand expansion driven by augmentation effects, chefs remain relatively stable due to strong physical and contextual constraints, while graphic design faces increasing automation pressure and demand contraction in standardized content production.
+
+Career-level signals are translated into institutional decisions and applied to the Software Engineering program at Carnegie Mellon University (CMU), the Culinary Arts program at the Culinary Institute of America (CIA), and the Graphic Design program at the Columbus College of Art \& Design (CCAD). A dynamic enrollment response model provides feasible adjustment directions under administrative capacity constraints, while a curriculum optimization model reallocates AI-related and foundational courses within a fixed credit budget. A skill-similarity-based career pathway analysis is introduced to identify feasible adjacent options when the original target occupation is disrupted, providing students with an additional, evaluable pathway under uncertainty. Moreover, employability is not treated as the sole objective: fairness, energy and water consumption, and safety and ethical responsibility are imposed as binding constraints.
+
+Beyond baseline scenarios, sensitivity analyses are conducted on Gen-AI diffusion speed and administrative adjustment capacity, with Monte Carlo simulations used to propagate uncertainty. Institutions are embedded in a shared three-dimensional indicator space and clustered to identify common response patterns, and a synthetic sample of approximately 1{,}000 virtual institutions is generated to test the stability of policy recommendations across diverse contexts.
+
+Overall, by integrating career evolution modeling, institution-level decision analysis, and uncertainty characterization, this study provides quantitative support for designing prudent and implementable educational strategies under Gen-AI.
+
+
+\end{abstract}
+
+% 生成 Summary Sheet（首页）
+\maketitle
+
+\newpage
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Introduction}
+
+\subsection{Problem Background}
+% 简述题目涉及的现实情况
+The rapid integration of Generative AI (Gen-AI) into daily life is poised to reshape the labor market, creating distinct challenges for STEM, trade, and arts careers. While
+some professions face displacement, others may grow, forcing post-secondary institutions
+to reevaluate their educational strategies. Faced with the decision to either restrict AI
+or embrace it, schools must determine the optimal balance for program enrollment and
+curriculum design. This study utilizes data-informed models to guide these institutional
+decisions, optimizing for graduate employability while accounting for energy consumption and ethical attribution.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figure/study}
+    \caption{Gen-AI and post-secondary education pathways.}
+    \label{fig:study_overview}
+\end{figure}
+
+
+\subsection{Restatement of the Problem}
+
+This study aims to assist higher-education decision-makers in formulating educational strategies under the rapid development of generative artificial intelligence (Gen-AI), while explicitly accounting for labor market changes and natural resource constraints. The analysis proceeds through the following steps:
+
+\begin{enumerate}
+  \item \textbf{Career Forecasting.} 
+  The analysis selects representative professions from the \emph{STEM}, \emph{Trade/Vocational}, and \emph{Arts} sectors, along with their corresponding educational institutions, to evaluate the specific impact of Gen-AI . A data-informed model is constructed to project future labor dynamics, specifically determining whether Gen-AI functions as a labor substitute or a productivity complement within each domain.
+
+  \item \textbf{Strategic Educational Formulation.} 
+  Based on the projected labor market shifts, the study formulates data-driven strategies for institutional reform. This includes determining optimal enrollment adjustments and designing curriculum restructuring plans. The framework specifically defines the appropriate level of AI integration—ranging from strict prohibition to full curricular embedding—to maximize graduate employability and technical fluency.
+
+  \item \textbf{Optimization under Binding Constraints.} 
+  The proposed educational strategies are optimized subject to strict resource and ethical constraints. The model explicitly accounts for the environmental externalities of Gen-AI deployment, specifically energy consumption and water usage, while strictly adhering to ethical standards regarding intellectual property rights and the risk of insufficient attribution.
+
+  \item \textbf{Holistic Evaluation and Generalizability.} 
+  The validity of the proposed framework is assessed beyond immediate employment metrics. The analysis evaluates the generalizability of the recommendations across diverse institutional types and examines the trade-offs between technological adaptation, institutional resilience, and environmental sustainability.
+
+  
+\end{enumerate}
+
+\subsection{Our Work}
+% 概述建模思路 + 建议放流程图
+For convenience, we draw a frame chart (Figure 2) to represent our work.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figure/workflow}
+    \caption{Workflow of the proposed modeling framework}
+    \label{fig:workflow}
+\end{figure}
+
+
+% ============================================================
+\section{Assumptions and Notations}
+
+\subsection{Assumptions}
+
+To ensure tractability while preserving institutional realism, the proposed modeling framework is developed under the following assumptions. These assumptions do not aim to fully replicate all real-world complexities but rather to delineate a clear and defensible boundary within which policy-relevant insights can be derived.
+
+\begin{itemize}
+
+\item \textbf{A1. Continuous temporal evolution of key system variables.}  
+At the institutional time scale considered in this study, both occupational labor demand and the penetration of Gen-AI within professional tasks evolve in a continuous and stage-wise manner, rather than through frequent discrete jumps.  
+
+\textit{Justification:}  
+Occupational structures and technology adoption are jointly constrained by education cycles, institutional inertia, and organizational absorption capacity. Modeling these dynamics as continuous processes enables the capture of long-term structural trends without introducing detailed micro-level behavioral assumptions.
+
+\item \textbf{A2. Limited but non-zero institutional adjustment capacity.}  
+Post-secondary institutions possess finite yet non-zero capacity to adjust enrollment scales and curriculum structures within a given decision period.  
+
+\textit{Justification:}  
+While educational institutions face administrative, financial, and organizational constraints, they are not completely rigid. Parameterizing adjustment capacity allows the model to balance institutional inertia with realistic decision flexibility.
+
+\item \textbf{A3. Additive and diminishing returns of curriculum contributions to capability formation.}  
+The contributions of different curriculum components to graduate capability formation are assumed to be additive, with diminishing marginal returns as credit allocation increases.  
+
+\textit{Justification:}  
+At the program level, learning outcomes accumulate across course categories, but excessive concentration in any single category yields decreasing incremental benefits. This assumption prevents extreme curriculum configurations and supports stable optimization outcomes.
+
+\item \textbf{A4. Skill-structure similarity as a proxy for career transition feasibility.}  
+The similarity of skill structures between occupations provides an effective approximation for assessing the feasibility of career transitions under automation risk.  
+
+\textit{Justification:}  
+In the absence of individual-level transition data, skill-vector similarity offers a system-level measure of occupational proximity, enabling the evaluation of career pathway elasticity and risk buffering within educational planning.
+
+\item \textbf{A5. Institutional priority of fairness, sustainability, and ethical constraints.}  
+Fairness, resource sustainability, and ethical safeguards constitute binding institutional boundaries in educational decision-making.  
+
+\textit{Justification:}  
+Educational policy is not a purely efficiency-driven optimization problem. Treating these considerations as hard constraints rather than secondary objectives reflects realistic governance principles and aligns institutional decisions with long-term social responsibility.
+
+\end{itemize}
+
+
+\subsection{Notations}
+\begin{table}[H]
+\centering
+\caption{Main notations used in this paper.}
+\label{tab:notations}
+\begin{tabularx}{\textwidth}{lXl}
+\hline
+\textbf{Symbol} & \textbf{Meaning} & \textbf{Unit} \\
+\hline
+$N$ & Population size & students \\
+$t$ & Time & day / year \\
+$a$ & Development coefficient & -- \\
+$b$ & Grey action quantity & data Unit \\
+$t_0$ & Inflection point 
+(transition to rapid AI diffusion) & day / year \\
+$E_{\text{current}}$ & Current enrollment size & students \\
+$\lambda$ & Administrative adjustment coefficient & -- \\
+$x_i(i=core, AI
+,human,cross)$ & The number of credits allocated to the i-th category & credits\\
+$\vec{V}_{\text{origin}}$ & The skill vectors for the original occupations & -- \\
+$\vec{V}_{\text{target}}$ & The skill vectors for the alternative occupations & -- \\
+$E_{\max}$ & Fairness threshold & -- \\
+$\gamma$ & Ethics governance coefficient & -- \\
+$\beta_{\text{env}}$ & Environmental cap & -- \\
+
+
+
+\hline
+\end{tabularx}
+\vspace{1ex} 
+{\footnotesize \textit{Note:} Other symbols will be described as they are used.}
+
+
+\end{table}
+
+% ============================================================
+\section{Task 1: Career Selection and Qualitative Dimension Analysis }
+% 大数据题：清洗、缺失、归一化、特征提取
+% 非数据题：解释数据来源/参数估计逻辑/为何不需要复杂预处理
+
+\subsection{Choice of Careers (STEM, Trade, Arts)}
+
+In the field of STEM, we select \textit{Software Engineer} as a representative occupation to exemplify the high substitution domain, as its highly structured and algorithmically formalizable tasks have been deeply integrated with AI coding tools; employment in this occupation is projected to grow by about 17\% from 2024 to 2034 \cite{BLS_SoftwareDeveloper_OOH}. 
+This occupation is also a typical case of human--AI collaboration, where generative models primarily augment coding, debugging, and documentation rather than fully replacing professional judgment and system design \cite{Eloundou2024}.
+
+In the trade career sector, we select \textit{Chef (Chefs and Head Cooks)} to represent the physical-barrier domain, where work relies on embodied skills and contextual perception that remain difficult to digitize, with a projected employment growth of 7\% from 2024 to 2034 \cite{BLS_Chefs_OOH}. 
+
+
+In the arts career category, we select \textit{Graphic Designer} to illustrate the high transformation domain, in which generative AI is reshaping creative workflows and value structures, accompanied by a more modest 2\% projected employment growth from 2024 to 2034 \cite{BLS_GraphicDesigner_OOH}. 
+
+
+
+\subsection{Career Drivers in the Gen-AI Context}
+
+To quantify professional heterogeneity, we distill four O*NET-base dimensions as the Axiomatic Foundation for the GL-CEM model:
+
+
+\textbf{(D$_1$) Task Automation Potential} Measures the extent to which specific tasks follow clear rules and can be replicated by algorithms. It indicates how easily a job's core functions can be performed by Gen-AI.
+
+\textbf{(D$_2$) Skill Evolution Requirement} Quantifies the necessity for workers to update their capabilities. It reflects the urgency to learn new tools and adapt workflows to remain employable in an AI-integrated environment.
+
+\textbf{(D$_3$) Demand Elasticity}  
+Evaluates the market's reaction to productivity gains: determining whether increased efficiency leads to industry growth or simply reduces the need for human labor
+
+\textbf{(D$_4$) Human and Physical Constraints}  
+Identifies the irreplaceable human elements—specifically complex physical actions and emotional intelligence—that current AI models cannot effectively simulate or replace.
+
+
+Collectively, these dimensions constitute the theoretical foundationl. The following section maps them into the GL-CEM parameter space, translating qualitative drivers into quantitative controls like saturation (L) and diffusion (k).”
+
+
+
+
+
+% ...
+
+% ============================================================
+\section{Task 2: Data-Driven Future Career Trajectory Model}
+
+% ---- 按 Task 分模型（建议用子节清晰组织）----
+\subsection{Data Collection and Pre-processing}
+
+To ensure scientific validity and generalizability, we developed a multi-source data pipeline. This infrastructure integrates macro-employment trends, micro-task characteristics, and institutional resource metrics to support our strategic framework.
+
+\subsubsection{Data Sources and Acquisition}
+
+We prioritize high-fidelity data from government labor statistics and occupational databases, with key sources summarized in Table.
+\ref{tab:data_source}.
+\begin{table}[htbp]
+    \centering
+    \caption{Summary of Data Sources and Access}
+    \label{tab:data_source}
+    \begin{tabular}{l|l}
+    \hline
+    \textbf{Data Source} & \textbf{Access Link} \\ \hline
+    \textbf{U.S. Bureau of Labor Statistics} & \url{https://www.bls.gov/} \\ \hline
+    \textbf{O*NET OnLine Database} & \url{https://www.onetonline.org/} \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Data Preprocessing Workflow}
+
+To mitigate noise and dimensional discrepancies, we implement a rigorous preprocessing sequence that ensures model robustness and unbiased outcomes.
+
+\subsection{The Grey-Logistic Coupled Evolutionary Model (GL-CEM)}
+
+To quantify Gen-AI’s long-term impact on labor demand, we construct a predictive model treating time as the sole independent variable, with occupational heterogeneity encapsulated via structural parameters. By defining dimensions $D_1$--$D_4$ to characterize task and diffusion profiles, the framework enables unified cross-occupational comparisons.
+
+The overall model consists of three components:  
+(1) Baseline trend prediction (No-AI Scenario);  
+(2) modeling AI technology penetration within occupations;  
+(3) labor demand recomposition incorporating substitution, augmentation, and new demand effects.
+
+\subsubsection{Baseline Trend Prediction under No-AI Scenario}
+
+To establish a counterfactual reference path unaffected by AI, we apply the Grey Prediction Model GM(1,1) to capture the natural evolution of occupational employment driven by historical inertia. Let the original employment time series of an occupation be denoted by $x^{(0)}$. After applying first-order Accumulated Generating Operation (AGO), the model is expressed as:
+\[
+\frac{dx^{(1)}}{dt} + a x^{(1)} = b .
+\]
+
+The resulting baseline employment forecast is denoted as $Y_t$ and serves as the reference trajectory for subsequent AI impact analysis.
+
+\subsubsection{AI Technology Penetration Model}
+
+Building upon the baseline trend, AI diffusion within occupational tasks is modeled using a Logistic S-curve:
+\[
+P(t) = \frac{L}{1 + e^{-k(t - t_0)}} ,
+\]
+where $P(t)$ denotes the proportion of tasks affected by AI at relative time $t$, with $t=0$ corresponding to the base year 2024.
+
+\paragraph{Penetration Upper Bound $L$ (Dimension $D_1$).}
+
+The long-run penetration ceiling $L$ is determined by task automation potential, corresponding to dimension $D_1$. Based on task-level data from the O*NET database, $L$ is computed as a weighted average:
+\[
+L = \frac{\sum (\text{Importance} \times D_1)}{\sum \text{Importance}} .
+\]
+
+Task importance values are obtained from the O*NET Online database \cite{onet2024}. 
+
+\paragraph{Diffusion Speed Parameter $k$ (Dimension $D_2$).}
+
+The diffusion speed parameter $k$ governs how rapidly AI adoption progresses within an occupation. It is specified as:
+\[
+k = 0.8 \cdot D_2 + 0.1 .
+\]
+
+The coefficient $0.8$ captures the accelerating impact of digital infrastructure and skills, while the constant $0.1$ establishes a baseline diffusion floor. This linear structure ensures interpretability and cross-occupational comparability.
+
+
+
+\subsubsection{Labor Demand Recomposition under AI Impact}
+
+Following AI penetration, occupational labor demand undergoes structural recomposition rather than simple substitution. This process is decomposed into three effects:
+
+\begin{enumerate}
+  \item \textbf{Human Core Defense:}  
+  Represented by dimension $D_4$, this component captures the proportion of tasks that remain resistant to AI due to emotional, ethical, or physical constraints.
+  
+  \item \textbf{AI Augmentation Effect:}  
+  Productivity gains achieved through human--AI collaboration, proportional to the penetration rate $P(t)$ and a productivity conversion coefficient $\eta$, while setting an augmentation coefficient $A$ that captures the average efficiency uplift when humans leverage AI tools in this occupation.
+  
+  \item \textbf{New Demand Effect:}  
+  Efficiency improvements and cost reductions may stimulate additional labor demand, modeled as
+  \[
+  N(t) = P(t) \cdot \eta \cdot D_3 ,
+  \]
+  where $D_3$ denotes market demand elasticity.
+\end{enumerate}
+
+Combining these effects, the adjusted labor demand function is expressed as:
+\[
+F(t) = Y_t \times \Big[(1 - P(t))(1 - D_4) + P(t)\cdot A + N(t)\Big] .
+\]
+
+\subsubsection{Summary}
+
+In this framework, time $t$ is the sole independent variable, while occupational differences in AI impact are fully encoded through parameters $(\eta, A, D_1, D_2, D_3, D_4)$. This structure enables a unified yet interpretable analysis of heterogeneous career trajectories under Gen-AI.
+
+
+
+\subsection{Career-Specific AI Impact Analysis}
+\subsubsection{Software Engineer}
+Based on BLS and O*NET data, Software Engineers are characterized by high automation exposure ($D_1 = 0.85$) and rapid skill evolution ($D_2 = 0.80$). Although AI drives cost reductions ($\eta = 0.41$) and productivity enhancements($A = 1.30$), core cognitive tasks remain significantly bound by human constraints ($D_4 = 0.28$).
+\cite{onet2024,BLS_SoftwareDeveloper_OOH}.
+Substituting the calibrated parameters for software engineers into the unified career evolution model yields the following occupation-specific labor demand function:
+
+\[
+F_{\text{SE}}(t)
+=
+Y_t \times \Big[(1 - P(t))(1 - 0.28) + P(t)\cdot 1.30 + P(t)\cdot 0.41 \cdot 0.15 \Big]
+\]
+
+We first evaluate the model's sensitivity to the external technological environment by varying the AI diffusion rate $r$. As shown in Fig.~\ref{fig:cia2}, while different growth scenarios scale the magnitude of employment outcomes, the long-term trajectories remain qualitatively consistent. This smooth response to varying diffusion speeds demonstrates the framework's resilience against uncertainties in global AI development.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figure/15.png}
+    \caption{Model component decomposition and final-versus-baseline comparison for software engineers.}
+    \label{fig:se_result}
+\end{figure}
+Furthermore, we examine institutional flexibility through the administrative adjustment parameter $\lambda$. Analysis of enrollment adjustments $\Delta E$ relative to market pressure $\Gamma_t$ (Fig.~\ref{fig:cia1}) reveals that $\lambda$ primarily governs the pace and intensity of reform. Since inflection points and adjustment directions remain invariant across all $\lambda$ values, we conclude that the model provides robust strategic guidance regardless of an institution's specific administrative capacity.
+
+\subsubsection{Chef}
+The Chef occupation is characterized by minimal automation susceptibility ($D_1 = 0.10$), slow skill evolution ($D_2 = 0.10$), and strong reliance on human craftsmanship ($D_4 = 0.45$). Constrained by low market elasticity ($D_3 = 0.07$), moderate productivity augmentation ($A = 0.50$), and limited efficiency gains ($\eta = 0.05$), substituting these calibrated parameters into the unified model yields the following labor demand function:
+
+\[
+F_{\text{chef}}(t)
+=
+Y_t \times \Big[(1 - P(t))(1 - 0.45) + P(t)\cdot 0.50 + P(t)\cdot 0.05 \cdot 0.07 \Big]
+\]
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figure/11.png}
+    \caption{Model component decomposition and final-versus-baseline comparison for chefs.}
+    \label{fig:chef_result}
+\end{figure}
+
+
+The demand function integrates the mechanisms of automation substitution and productivity enhancement. However, as shown in Figure~\ref{fig:chef_result}, the chef occupation exhibits a distinct resilience compared to digital-centric professions. The adjusted employment forecast tracks the baseline trajectory closely, a result grounded in the calibrated parameters—specifically the low automation potential and high physical constraints, which act as a buffer against displacement. Component decomposition confirms that human expertise remains the dominant value drive, rendering the substitution effect minimal. Consequently, AI functions primarily as an auxiliary tool for optimization rather than a substitute for execution. The net employment effect remains negligible, implying that technological integration reshapes the content of daily workflows rather than necessitating a contraction in the workforce size.
+
+
+
+\subsubsection{Graphic Designer}
+For graphic designers, the structural parameters are calibrated as
+$D_1 = 0.60$, $D_2 = 0.40$, $D_3 = 0.02$, $D_4 = 0.29$, $A = 0.60$, and $\eta = 0.10$,
+reflecting a moderate level of automation exposure, limited demand elasticity,
+and a relatively stable core of human-constrained creative tasks.
+
+Substituting these parameters into the unified career evolution model yields the
+occupation-specific labor demand function for graphic designers:
+
+\[
+F_{\text{gd}}(t)
+=
+Y_t \times \Big[(1 - P(t))(1 - 0.29) + P(t)\cdot 0.60 + P(t)\cdot 0.10 \cdot 0.02 \Big]
+\]
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{figure/13.png}
+    \caption{Model component decomposition and final-versus-baseline comparison for graphic designers.}
+    \label{fig:gd_result}
+\end{figure}
+
+The results indicates a projected downward trend for Graphic Designers, distinguishing this occupation from the others with a forecasted net contraction in employment. The model suggests that generative AI significantly lowers the barrier to producing standardized visual assets, effectively substituting for routine human labor. However, unlike software engineering, the market demand for general graphic content is relatively saturated; therefore, reduced production costs do not stimulate a proportional increase in project volume. Consequently, the efficiency gains are insufficient to counterbalance the displacement of routine tasks, leading to a structural consolidation of the workforce around high-level creative strategy and brand management.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figure/3.png}
+    \caption{Comparative analysis of labor demand trajectories across occupations under AI adoption.}
+    \label{fig:career_compare}
+\end{figure}
+
+As shown in Figure~\ref{fig:career_compare}, AI diffusion generates three distinct labor market trajectories driven by occupational task structures. Software engineers experience employment expansion through productivity complementarity, whereas chefs maintain stability due to the physical insulation of their core tasks. Conversely, graphic designers face a contraction, reflecting a substitutive pattern where automation outpaces demand growth. These results underscore that AI’s impact is highly heterogeneous, producing simultaneous expansion, stabilization, and contraction across different professions.
+
+\section{Task 3: Strategic Institutional Decision Model}
+
+\subsection{Dynamic Enrollment Response Model}
+
+To characterize how higher education institutions adjust enrollment size in response to changes in occupational demand, we introduce a supply--demand pressure index $\Gamma_t$ to quantify the mismatch between current enrollment capacity and future labor demand:
+\[
+\Gamma_t = \frac{F(t) - E_{\text{current}}}{E_{\text{current}}}.
+\]
+
+Constrained by physical resources and administrative limits, enrollment capacity cannot scale indefinitely with labor demand. To capture this saturation effect, a nonlinear response mechanism based on the hyperbolic tangent function is introduced
+\[
+\Delta E = E_{\text{current}} \cdot \lambda \cdot \tanh(\Gamma_t),
+\]
+where $\tanh(\Gamma_t) \in (-1,1)$ maps the pressure index to a bounded interval.
+
+The administrative adjustment coefficient $\lambda$ is via a hybrid AHP-Entropy framework evaluating strategic flexibility ($x_1$), hardware dependency ($x_2$), and service capacity ($x_3$), utilizing the principal eigenvector of the judgment matrix A
+\[
+Aw = \lambda_{\max} w, \qquad CR < 0.1,
+\]
+Integrating entropy weights and scaling factors $\alpha_i$, the coefficient is defined as: 
+\[
+\lambda = \alpha_1 w_1 + \alpha_2 w_2 + \alpha_3 w_3.
+\]
+
+Under this adjustment mechanism, the enrollment size is updated according to the state transition equation
+\[
+E_{\text{new}} = E_{\text{current}} + \Delta E.
+\]
+
+\subsection{Curriculum Structure Optimization Model}
+
+Given fixed enrollment, the study formulates credit reallocation as a constrained nonlinear optimization problem to align with GenAI-driven demand. The decision vector X distributes credits across four domains: technical foundations, AI augmentation, human-centric capabilities, and cross-disciplinary practice. Dimensionless weights $w_i$ are introduced to quantify the market importance of each category, effectively distinguishing institutional resource supply $x_i$ from occupational value demand $w_i$.
+ 
+\[
+\mathbf{X} = [x_{\text{core}}, x_{\text{AI}}, x_{\text{human}}, x_{\text{cross}}],
+\qquad
+x_{\text{core}} + x_{\text{AI}} + x_{\text{human}} + x_{\text{cross}} = S.
+\]
+The objective of curriculum optimization is to maximize the net educational utility, defined as
+\[
+\max J(\mathbf{X}) = U(\mathbf{X}) - C_{\text{trans}}(\mathbf{X}),
+\]
+where $U(\mathbf{X})$ denotes the capability utility generated by the curriculum structure, and $C_{\text{trans}}(\mathbf{X})$ represents the institutional cost associated with structural transition.
+
+To capture diminishing marginal learning returns, the capability utility function is specified as
+\[
+U(\mathbf{X}) = \sum_i w_i \sqrt{x_i}.
+\]
+The square-root form ensures diminishing marginal utility of credit investment and prevents extreme corner solutions in which all credits are allocated to a single category.
+
+Curriculum reform is constrained by institutional inertia and adjustment costs. Let $x_{i,\text{old}}$ denote the pre-reform credit allocation of category $i$. A transition penalty is imposed only when the relative change exceeds a threshold, defined as
+\[
+C_{\text{trans}}(\mathbf{X}) = 0.05 \sum_i \left( \frac{|x_i - x_{i,\text{old}}|}{x_{i,\text{old}}} \right),
+\qquad
+\text{for } \frac{|x_i - x_{i,\text{old}}|}{x_{i,\text{old}}} > 30\%.
+\]
+This formulation reflects the institutional reality that incremental adjustments are feasible, while large structural shifts incur substantial administrative and resource costs.
+
+The optimization is subject to the following constraints:
+\[
+x_{\text{core}} + x_{\text{AI}} + x_{\text{human}} + x_{\text{cross}} = S,
+\]
+\[
+x_{\text{core}} \ge 20, \qquad x_{\text{AI}} \ge 2, \qquad x_i \ge 0.
+\]
+
+Due to the nonlinearity of the objective function and the presence of threshold-based penalties, the model is solved numerically using an adaptive simulated annealing algorithm to obtain near-global optimal solutions.
+
+Overall, this model provides a structured mechanism for translating occupational demand signals into feasible curriculum reform strategies under fixed enrollment and credit constraints.
+
+\subsection{Career Path Elasticity Model}
+
+This submodel functions as a safety mechanism to evaluate career transition feasibility via skill-based similarity rather than demand forecasting. A standardized five-dimensional vector, derived from O*NET Online Database \cite{onet2024}, represents each occupation to quantify transferable competencies under worst-case scenarios. Specifically, a five-dimensional skill vector is defined as
+\[
+\vec{V} =
+\begin{bmatrix}
+v^{(1)} & v^{(2)} & v^{(3)} & v^{(4)} & v^{(5)}
+\end{bmatrix}^{\top},
+\]
+Derived from O*NET, the vector comprises normalized, dimensionless scores across Analytical, Creative, Technical, Interpersonal, and Physical domains to facilitate cross-occupation comparison. Let $\vec{V}_{\text{origin}}$ and $\vec{V}_{\text{target}}$ denote the skill vectors for the original and alternative occupations, respectively. Career path elasticity is defined using cosine similarity:
+\[
+\text{CPE}_{ij}
+=
+\frac{\vec{V}_{\text{origin}} \cdot \vec{V}_{\text{target}}}
+{\|\vec{V}_{\text{origin}}\| \, \|\vec{V}_{\text{target}}\|}.
+\]
+This metric captures similarity in skill composition rather than absolute skill intensity, with values in the interval $[0,1]$. 
+
+To provide actionable guidance beyond a scalar similarity score, a skill gap analysis is conducted by identifying the dimension with the largest absolute difference:
+\[
+k^{*} = \arg\max_{k} \left| v^{(k)}_{\text{origin}} - v^{(k)}_{\text{target}} \right|.
+\]
+The index $k^{*}$ indicates the most critical skill deficiency that must be addressed to enable successful transition, thereby informing targeted bridge training or curriculum adjustments.
+
+Based on the computed elasticity score, career transition feasibility is classified according to the following decision rules: transitions with $\text{CPE} > 0.8$ are considered directly feasible; transitions with $0.5 < \text{CPE} \leq 0.8$ require targeted bridge training; and transitions with $\text{CPE} \leq 0.5$ are regarded as high-risk. Overall, this model complements the enrollment and curriculum optimization submodels by quantifying occupational resilience through skill-based career mobility.
+
+\subsection{Institution-Level Application of Model Outputs}
+\subsubsection{Programs and Enrollment Baselines}
+
+To apply the previously derived model outputs at the institutional level, three post-secondary programs are selected as application targets, each corresponding to one career category. The baseline enrollment sizes used for scaling institutional implications are as follows:
+
+\begin{itemize}
+    \item \textbf{Carnegie Mellon University — Computer Science (software engineering pathway)}: 1,073 students \cite{CMUEnrollment2024}
+    \item \textbf{Columbus College of Art \& Design — Graphic Design}: 900 students \cite{CCADEnrollment}
+    \item \textbf{Culinary Institute of America — Culinary Arts}: 3,011 students \cite{CIAEnrollment}
+\end{itemize}
+
+These enrollment figures establish the baseline capacity \(Y_0\) for recommendations. Figures~\ref{fig:531} and~\ref{fig:532} summarize the governing administrative adjustment coefficients and weighting structures.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figure/531.png}
+    \caption{Internal weighting structure for curriculum adjustment($w_i$)}
+    \label{fig:531}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figure/ahp.png}
+    \caption{Administrative adjustment coefficients derived from AHP analysis}
+    \label{fig:532}
+\end{figure}
+
+\subsection{CMU: Model-Based Recommendations on Enrollment and Curriculum Adjustment}
+
+Identifying substantial oversupply in CMU’s CS programs, the current supply level \(S_t = 1073\), exceeds the estimated market demand \(D_t = 600\), the model prescribes a feasible 5.5\% enrollment reduction to 1014, constrained by \(\lambda = 0.132\). This validates a strategy of moderate contraction, balancing market pressure relief with institutional limitations.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[
+        width=0.55\textwidth,
+        height=0.35\textheight,
+        keepaspectratio
+    ]{figure/CMU/CMU4.png}
+    \caption{Enrollment response under supply--demand imbalance for CMU}
+    \label{fig:CMU4}
+\end{figure}
+
+
+After adjusted enrollment, the curriculum is optimized to a 2.7\% gain ($x_{\text{AI}}$ credits: 5$\to14$, $x_{\text{core}}$ credits: 60$\to70$, $x_{\text{human}}$ credits reduced to 6, $x_{\text{cross}}$ credits reduced to 30), reallocating credits toward high-impact skills. Additionally, a 0.982 skill similarity supports the strategic redirection of graduates into adjacent fields like database architecture, mitigating software market saturation without disrupting the training framework. 
+Overall, the CMU case confirms that coordinating enrollment, curriculum, and career pathways maximizes institutional adaptability under strict constraints.
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figure/CMU/CMU2.png}
+        \caption{CMU curriculum credit reallocation (current vs.\ optimized)}
+        \label{fig:CMU2}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.43\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figure/CMU/CMU5.png}
+        \caption{Skill fingerprint similarity supporting adjacent career pathways}
+        \label{fig:CMU5}
+    \end{minipage}
+\end{figure}
+
+\subsection{CIA: Model-Based Recommendations on Enrollment, Curriculum, and Occupational Substitutability}
+
+Compared with technical universities, the Culinary Institute of America (CIA) represents a practice-oriented education system with limited structural flexibility. Based on the preceding models, CIA’s optimal response to labor market imbalance is characterized by constrained enrollment adjustment, conservative curriculum modification, and substitution-based career alignment.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figure/CIA/CIA1.png}
+    \caption{Enrollment response under supply--demand imbalance for CIA}
+    \label{fig:CIA-enroll}
+\end{figure}
+
+Constrained by low administrative flexibility ($\lambda=0.034$), CIA enrollment remains rigid with only a feasible $2.3\%$ contraction despite oversupply. Consequently, curriculum optimization favors a practice-dominant structure (only 2 AI credits), reflecting the low marginal returns of AI in a field driven by hands-on execution. Expanding AI content would counterproductively crowd out high-impact practical training.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{figure/CIA/CIA2.jpg}
+    \caption{Optimized curriculum structure and utility contribution for CIA}
+    \label{fig:CIA-curr}
+\end{figure}
+
+A 0.990 skill fingerprint similarity shown in Figure~\ref{fig:CIA-skill} between chefs and food service managers reveals near-complete competency overlap. Given the institution's limited internal elasticity against market shocks, the optimal risk mitigation is not structural restructuring, but guiding graduates toward these highly substitutable adjacent roles. Consequently, the model prescribes a conservative strategy for practice-oriented institutions—prioritizing enrollment stability and career substitution—which contrasts sharply with the adaptive patterns of technology-driven peers.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.42\textwidth]{figure/CIA/CIA3.png}
+    \caption{Skill fingerprint similarity between chefs and food service managers}
+    \label{fig:CIA-skill}
+\end{figure}
+
+\subsection{CCAD: Model-Based Recommendations on Enrollment, Curriculum, and Career Pathway Alignment}
+
+The analysis for CCAD reveals a mild oversupply ($P = -0.333$) tempered by limited administrative flexibility ($\lambda = 0.054$), leading the model to prescribe a conservative $1.7\%$ enrollment adjustment (to 884 students). In parallel, curriculum optimization signals a ``practice-first'' strategy: rather than aggressively integrating AI, the model treats it as a complementary tool---contributing just $10\%$ to total utility. Consequently, $x_{\text{AI}}$ credits see only nominal growth ($5 \to 6$), while resources are strategically channeled into $x_{\text{core}}$ courses ($40 \to 47$) and $x_{\text{cross}}$ courses ($60 \to 62$) modules to reinforce core creative execution.
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[
+        width=0.75\textwidth,
+        height=0.50\textheight,
+        keepaspectratio
+    ]{figure/CCAD/CCAD2.jpg}
+    \caption{CCAD curriculum optimization results (credit reallocation and utility decomposition)}
+    \label{fig:CCAD2}
+\end{figure}
+
+Finally, the occupational substitutability analysis highlights a robust pathway for career evolution within the creative hierarchy. Figure~\ref{fig:CCAD4} shows that the skill fingerprint similarity between graphic designers and art directors reaches 0.998, indicating near-complete overlap in core competency dimensions. Under AI-driven automation of routine design tasks, this result supports a strategy of vertical role upgrading (e.g., toward art direction and creative leadership) rather than forced switching into technical occupations, improving labor-market matching without substantial retraining.
+
+After completing the model-based analysis for CMU, CCAD, and CIA, this subsection synthesizes the results at the \emph{program level} to extract actionable recommendations. Rather than reiterating project-specific findings, the focus here is on identifying consistent decision patterns across programs with different training objectives.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[
+        width=0.50\textwidth,
+        height=0.30\textheight,
+        keepaspectratio
+    ]{figure/CCAD/CCAD4.png}
+    \caption{Skill fingerprint similarity between graphic designers and art directors}
+    \label{fig:CCAD4}
+\end{figure}
+
+
+
+
+From the perspective of curriculum design, the optimized results exhibit a clear and stable differentiation across programs. As shown in Figure~\ref{fig:overview1}, technology-oriented programs tend to allocate a substantially larger share of credits to AI-related and foundational coursework in order to reinforce technical depth and computational generality. In contrast, creative- and service-oriented programs maintain relatively low AI credit shares, reallocating limited curriculum resources toward project-based training and core professional skill development. This outcome indicates that AI integration should not be treated as a uniform expansion target across programs; instead, its role should be determined by each program’s intended skill output and training logic.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[
+        width=0.60\textwidth,
+        height=0.31\textheight,
+        keepaspectratio
+    ]{figure/CMU/1.png}
+    \caption{Comparison of curriculum structure before and after optimization across programs}
+    \label{fig:overview1}
+\end{figure}
+
+Enrollment adjustment signals also display meaningful cross-program variation. As illustrated in Figure~\ref{fig:overview2}, all programs face negative enrollment pressure to varying degrees, yet the magnitude of feasible adjustment is strongly constrained by administrative capacity. The results suggest that technology- and service-oriented programs possess greater flexibility for enrollment contraction, while creative programs are better served by maintaining a relatively stable intake and relying primarily on internal curriculum reallocation to improve alignment with labor market conditions.
+
+Overall, this synthesis demonstrates that the proposed framework supports differentiated, program-specific decision-making under a unified modeling structure. While enrollment scale adjustments should remain moderate and institutionally feasible, curriculum restructuring emerges as the primary lever for enhancing program adaptability under generative AI disruption. Rather than converging toward a single “AI-intensive” model, effective responses are achieved through structural reallocation consistent with each program’s strategic positioning.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[
+        width=0.75\textwidth,
+        height=0.38\textheight,
+        keepaspectratio
+    ]{figure/CMU/2.jpg}
+    \caption{Enrollment pressure index and recommended enrollment adjustment across programs}
+    \label{fig:overview2}
+\end{figure}
+
+\section{Red-Line Constrained Optimization Results}
+
+While our model prioritizes skill structure and employability, labor-market demand is not the sole metric for educational success. Over-emphasizing short-term employment risks promoting high-energy, high-risk curricula that compromise equity and sustainability. Consequently, we augment our utility-maximization framework with \textbf{fairness, environmental, and ethical "red-line" constraints.} These serve as mandatory conditions rather than mere penalties. This refined approach identifies reform strategies that balance immediate employment utility with long-term institutional feasibility and social responsibility.
+
+Throughout this section, the total number of credits is fixed at
+\[
+S_{\text{total}} = 120.
+\]
+Curriculum allocations must adhere to simultaneous fairness, environmental, and safety constraints. The fairness constraint, defining the maximum permissible exclusionary effect of a curriculum, is expressed as:
+\[
+\frac{1}{S_{\text{total}}}\sum_i e_i x_i \le E_{\max},
+\]
+where \(e_i\) denotes the exclusion or entry-barrier coefficient of course category \(i\). To reflect institutional heterogeneity, the fairness threshold is specified as
+\[
+E_{\max}=
+\begin{cases}
+0.30, & \text{CMU},\\
+0.25, & \text{CCAD},\\
+0.25, & \text{CIA}.
+\end{cases}
+\]
+
+To explicitly incorporate sustainability considerations associated with generative AI instruction, an environmental cap is imposed on the share of high-energy courses \(X_{\text{HighEnergy}}\):
+\[
+\frac{\sum_{i\in X_{\text{HighEnergy}}} x_i}{S_{\text{total}}} \le \beta_{\text{env}},
+\]
+with institution-specific upper bounds given by
+\[
+\beta_{\text{env}}=
+\begin{cases}
+0.15, & \text{CMU},\\
+0.12, & \text{CCAD},\\
+0.12, & \text{CIA}.
+\end{cases}
+\]
+
+In addition, a safety and ethics constraint is introduced to ensure that the expansion of AI-related instruction is accompanied by proportional governance and responsibility training:
+\[
+x_{\text{ethics}} \ge \gamma x_{\text{AI}}.
+\]
+The parameter \(\gamma\) represents the minimum ethics-to-AI ratio and is derived from occupational risk tiers based on the normalized ``Consequence of Error'' indicator reported in the O*NET Online Database \cite{onet2024}. The resulting mapping is
+\[
+\gamma=
+\begin{cases}
+0.50, & \text{Software Engineer (high risk)},\\
+0.30, & \text{Graphic Designer (medium risk)},\\
+0.10, & \text{Chef (relatively low risk)}.
+\end{cases}
+\]
+
+Constraints truncate extreme AI-heavy allocations, shifting the unconstrained optima into the feasible region (Table~\ref{tab:redline_results})
+
+\begin{table}[H]
+\centering
+\caption{Comparison of Unconstrained and Red-Line Constrained Solutions under High AI Preference ($S_{\text{total}}=120$)}
+\label{tab:redline_results}
+\begin{tabular}{l c c c c c}
+\hline
+Institution 
+& \makecell{AI Credits\\(U$\rightarrow$C)} 
+& AI Red. 
+& \makecell{Skill Utility\\(U$\rightarrow$C)} 
+& Loss 
+& Status \\
+\hline
+CMU  & $61 \rightarrow 18$ & $-70.5\%$ & $6.190 \rightarrow 5.151$ & $16.79\%$ & OK \\
+CIA  & $22 \rightarrow 14$ & $-36.4\%$ & $5.500 \rightarrow 5.254$ & $4.47\%$  & OK \\
+CCAD & $53 \rightarrow 14$ & $-73.6\%$ & $6.018 \rightarrow 5.122$ & $14.89\%$ & OK \\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+Unconstrained optimization yields 22--61 AI credits, which red-line constraints compress to a feasible 14--18 credits while satisfying $x_{\text{ethics}} \ge \gamma x_{\text{AI}}$. Despite a 4.47\%--16.79\% utility loss, these solutions shift from theoretical optima to \textbf{actionable, fully feasible curriculum strategies}.
+
+\section{Generalization and Structural Applicability of the Institutional Strategy Model}
+
+To verify the framework's scalability, we performed a Monte Carlo simulation ($N=1000$) within a unified $[0,1]^3$ parameter space representing AI impact, resource elasticity, and ethical constraints. K-means clustering identifies discrete, stable strategic archetypes rather than random distributions (Fig.~\ref{fig:ccad3}). The natural alignment of CMU, CCAD, and CIA with these clusters confirms their status as representative archetypes rather than outliers.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.80\textwidth]{CCAD/3.png}
+    \caption{Monte Carlo clustering of institutional archetypes with anchor institutions.}
+    \label{fig:ccad3}
+\end{figure}
+
+Furthermore, the model identifies additional strategic regions, demonstrating its capacity to generate coherent recommendations for unseen scenarios without overfitting. Robustness is evidenced by structural consistency under random perturbations; institutions retain their archetypes as long as relative $(X, Y, Z)$ positions are preserved. These results validate the framework’s structural isomorphism and its applicability across diverse sectors beyond the initial anchor cases.
+
+\section{Sensitivity Analysis}
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{CIA/2.png}
+        \caption{Sensitivity of employment trajectories to variations in the AI diffusion growth rate $r$.}
+        \label{fig:cia2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{CIA/1.jpg}
+        \caption{Sensitivity of enrollment adjustment to the administrative adjustment parameter $\lambda$.}
+        \label{fig:cia1}
+    \end{minipage}
+\end{figure}
+
+To examine the robustness and controllability of the proposed model under key uncertainties, we do not perform exhaustive sensitivity tests on all parameters. Instead, we focus on two representative parameters corresponding to external technological uncertainty and internal institutional capability, respectively.
+
+Tests on the AI diffusion rate $r$ show that while the speed and magnitude of employment shifts may fluctuate, the long-term trajectory remains structurally stable, as shown in Figure~\ref{fig:cia2}. This confirms the model is resilient to technological volatility.
+
+Similarly, administrative capacity $\lambda$ egulates the pace rather than the nature of reform. As shown in Figure~\ref{fig:cia1}, varing $\lambda$ shifts the intensity of the S-shaped enrollment response to market pressure $(\Gamma_t)$ but keeps the adjustment direction intact, ensuring no structural distortions are introduced.
+
+
+
+
+\section{Model Evaluation}
+
+\subsection{Strengths}
+
+\paragraph{(1) Multi-scale and Systematic Modeling Framework}
+This study constructs a multi-scale modeling framework that spans career evolution, institutional decision-making, and curriculum resource allocation. By linking macro-level labor demand forecasting with meso-level enrollment adjustment, curriculum optimization, and career pathway analysis, the framework achieves a coherent transition from trend identification to actionable policy recommendations. This structure effectively captures the heterogeneous impacts of Gen-AI across different occupations and institutional contexts, while avoiding the interpretability limitations of monolithic models in highly open-ended problems.
+
+\paragraph{(2) Interpretable Hybrid Modeling Strategy}
+The modeling approach adopts a layered hybrid strategy tailored to the characteristics of each subproblem. The Grey Prediction Model is employed to capture long-term trends under small-sample conditions, the Logistic model describes the staged diffusion of Gen-AI technologies, and task-based value recomposition functions distinguish between substitution, augmentation, and new-demand effects of AI. Compared with single-method approaches, this strategy enhances robustness under data constraints and significantly improves the interpretability of model outputs.
+
+\paragraph{(3) Red-Line Constraint Design Grounded in Real-World Conditions}
+Instead of treating sustainability and ethical considerations as ex post adjustments, the model explicitly incorporates resource consumption, institutional fairness, and ethical safety as binding constraints. This red-line mechanism prevents the optimization process from converging to extreme and impractical solutions under high AI-preference scenarios. It reflects a realistic understanding that Gen-AI is not an unlimited resource and ensures that the resulting recommendations remain implementable and defensible in long-term governance contexts.
+
+\paragraph{(4) Career Path Elasticity as a System-Level Safety Mechanism}
+The introduction of a Career Path Elasticity (CPE) model provides a structural buffer against occupational automation risk. By evaluating skill-profile similarity between occupations, the model assesses the feasibility of transitions to adjacent careers when the target occupation faces disruption. This mechanism enhances the resilience of the education system by reducing reliance on a single occupational demand forecast and supporting risk-aware institutional planning.
+
+\subsection{Weaknesses}
+
+\paragraph{(1) Structural Dependence on Historical Trends and Extrapolation}
+Although the Grey Prediction Model mitigates issues arising from limited historical data, the long-term career projections still rely structurally on trend extrapolation assumptions. If the development trajectory of Gen-AI exhibits abrupt, nonlinear, or paradigm-shifting changes, predictions based on smooth evolutionary paths may deviate from realized outcomes.
+
+\paragraph{(2) Predominantly One-way Coupling Between Submodels}
+While the submodels are logically consistent, their interactions are primarily unidirectional. Career demand forecasts inform enrollment and curriculum decisions, but the potential feedback effects of institutional adaptation on labor market structures are not explicitly modeled. Incorporating fully endogenous bidirectional feedback would increase theoretical completeness but also substantially raise model complexity, and is therefore beyond the scope of this study.
+
+\paragraph{(3) Partial Reliance on Expert Judgment and Secondary Data}
+Some structural parameters, including capability weights, demand elasticities, and ethical thresholds, are derived from expert judgment or secondary databases. Although sensitivity analysis indicates that the model remains stable within reasonable parameter ranges, the absence of more granular micro-level data limits the precision of parameter calibration and leaves room for further refinement.
+
+\section{Conclusion}
+
+The rapid diffusion of generative artificial intelligence is not merely a technological shift, but a fundamentally institutional and ethical choice. For post-secondary education systems, the central question is no longer whether to adopt Gen-AI, but how to define clear boundaries between technological efficiency, social responsibility, and the enduring mission of education.
+
+While this study develops a quantitative framework to translate AI-driven labor market signals into institutional decisions on enrollment, curriculum structure, and career resilience, its core contribution lies beyond predictive modeling. The results highlight that educational systems should not passively optimize for short-term employability under technological incentives. Instead, they must assume normative responsibility for how technology reshapes access, capability formation, and long-term social outcomes.
+
+Accordingly, this work explicitly incorporates fairness, resource constraints, and ethical safeguards as binding conditions rather than secondary considerations. This design reflects the position that educational success cannot be evaluated solely through efficiency or output metrics, but must also account for sustainability, inclusiveness, and institutional legitimacy in an AI-intensive environment.
+
+From a policy perspective, the analysis further demonstrates that there is no universal “best” strategy for AI integration. Differences in institutional missions, resource flexibility, and risk exposure require differentiated responses rather than uniform mandates. Such heterogeneity underscores the importance of context-sensitive governance and cautions against one-size-fits-all approaches to educational reform.
+
+Ultimately, this study does not seek to answer which professions will be replaced by AI, but rather addresses a more fundamental question: in a future where Gen-AI becomes a pervasive infrastructure, what kind of human capabilities should education choose to preserve, develop, and protect. The answer to this question will determine whether technological progress serves broader social well-being, or merely accelerates existing inequalities.
+
+
+% ============================================================
+% 参考文献配置（这里是唯一的关键改动点）
+% ============================================================
+\newpage
+\addcontentsline{toc}{section}{References} % 让 References 进目录
+\bibliographystyle{plain} % 参考文献风格
+\bibliography{references} % 关联 references.bib 文件
+
+
+\newpage
+\section*{AI Use Report}
+\addcontentsline{toc}{section}{AI Use Report}
+
+To comply with the contest requirement on the disclosure of AI assistance, we report our usage of generative AI tools as follows.
+
+\textbf{Scope of AI Use.}
+AI tools were used \emph{only} for (i) language polishing (grammar, clarity, conciseness) and
+(ii) high-level restructuring suggestions (e.g., improving paragraph transitions, reorganizing
+section flow, and aligning narrative with the task requirements). In particular, AI assistance
+was applied to refine the exposition in the Introduction, model interpretation paragraphs,
+and conclusion-level synthesis, without altering the underlying modeling logic.
+
+\textbf{Work Not Assisted by AI.}
+All mathematical modeling decisions were developed by the team, including problem
+decomposition, assumption design, variable definition, model formulation, parameter
+calibration, sensitivity-analysis design, and interpretation of results. All figures, diagrams,
+and visualizations were created manually by the team (hand-crafted plots and layouts),
+and all \LaTeX\ code was written and debugged by the team without AI-generated code
+snippets.
+
+\textbf{Verification and Responsibility.}
+All AI-suggested edits were reviewed, selectively adopted, and cross-checked by the team
+to ensure technical correctness, consistency with the implemented models, and compliance
+with academic integrity. The team assumes full responsibility for the content, methodology,
+and conclusions of this paper.
+
+\end{document}

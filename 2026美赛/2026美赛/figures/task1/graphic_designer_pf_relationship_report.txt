@@ -1,0 +1,19 @@
+Direct Sensitivity Analysis: AI Penetration (P) vs Labor Demand (F) for graphic_designer
+======================================================================
+Analysis Type: Pure Functional Relationship (Time-Independent)
+
+1. Mathematical Relationship
+----------------------------------------
+   Multiplier Formula: M = 1 + Slope * P
+   Net Impact Slope (Beta): -0.1080
+
+2. Interpretation
+----------------------------------------
+   Type: NEGATIVE Correlation (AI Displacement Effect)
+   Meaning: For every 1% increase in AI penetration, labor demand DECREASES by 10.80% relative to baseline.
+
+3. Forecast Context (2033)
+----------------------------------------
+   Predicted Max Penetration: 58.7%
+   Resulting Demand Multiplier: 0.937x
+   Net Outcome: Loss of 6.3% jobs compared to 'No-AI' scenario.
