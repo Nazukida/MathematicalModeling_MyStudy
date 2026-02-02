@@ -59,32 +59,27 @@ $$ E_{new} = E_{current} + \Delta E $$
 
 ### 3.3 目标函数 (Objective Function)
 最大化净效用 $J(\mathbf{X})$：
-$$ \text{Maximize } J(\mathbf{X}) = U_{skill}(\mathbf{X}) + U_{bonus}(\mathbf{X}) - C_{trans}(\mathbf{X}) $$
+$$ \text{Maximize } J(\mathbf{X}) = U(\mathbf{X}) - C_{trans}(\mathbf{X}) $$
 
 #### 3.3.1 基础效用 (边际递减)
-$$ U_{skill}(\mathbf{X}) = S \cdot \sum_{i} w_i \cdot \sqrt{x_i} $$
+$$ U(\mathbf{X}) = \sum_{i} w_i \cdot \sqrt{x_i} $$
 *   **平方根 $\sqrt{x_i}$**：数学上保证了收益递减，避免模型倾向于将所有学分投入单一高权重课程（Corner Solution），符合教育全面发展的规律。
-*   **$S=100$**：缩放因子，使数值处于易于处理的范围。
 
-#### 3.3.2 协同效应奖励 (Synergy Bonus)
-模拟"学科交叉"带来的额外收益。当基础学科和AI技能都达到一定深度时，会有涌现效应。
-$$ U_{bonus} = \begin{cases} 0.05 \cdot U_{skill}, & \text{if } x_{base} > 30 \text{ and } x_{AI} > 30 \\ 0, & \text{otherwise} \end{cases} $$
-
-#### 3.3.3 转型阻力成本 (Transition Penalty)
+#### 3.3.2 转型阻力成本 (Transition Penalty)
 惩罚过于激进的课程改革。
 $$ C_{trans}(\mathbf{X}) = 0.05 \cdot \sum \left( \frac{|x_i - x_{old}|}{x_{old}} \right), \quad \forall i \text{ where change} > 30\% $$
 *   仅当某类课程变动超过 30% 时才计算惩罚。
 
-### 3.4 内部参数设计：权重矩阵
+### 3.3.3 内部参数设计：权重矩阵
 针对不同学校设定的权重 ($w_i$)，反映了其办学定位：
 
-| 学校 | Base (基础) | AI (技术) | Ethics (伦理) | Project (项目) | 设计逻辑 |
+| School | Base | AI | Ethics | Project | Design Logic |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CMU** | 0.40 | **0.25** | 0.10 | 0.25 | 研究型大学，重基础与AI理论 |
-| **CCAD** | 0.35 | 0.15 | 0.10 | **0.40** | 艺术院校，重项目实践 |
-| **CIA** | **0.45** | 0.10 | 0.10 | 0.35 | 职业学院，重基本功与实操 |
+| **CMU** | **0.40** | 0.25 | 0.10 | 0.25 | Research-oriented universities, emphasizing fundamentals and AI theories |
+| **CCAD** | 0.35 | 0.15 | 0.10 | **0.40** | Art school, heavy project practice |
+| **CIA** | **0.45** | 0.10 | 0.10 | 0.35 | Vocational colleges emphasize basic skills and practical operation |
 
-### 3.5 求解算法：自适应模拟退火 (Adaptive Simulated Annealing)
+### 3.4 求解算法：自适应模拟退火 (Adaptive Simulated Annealing)
 为了在庞大的解空间中找到全局最优，并避免陷入局部最优，采用了改进的SA算法。
 
 **算法内部逻辑：**
@@ -99,7 +94,7 @@ $$ C_{trans}(\mathbf{X}) = 0.05 \cdot \sum \left( \frac{|x_i - x_{old}|}{x_{old}
 
 ---
 
-## 4. 核心子模型 III：职业路径弹性模型 (Career Path Elasticity Model)
+## 4 核心子模型 III：职业路径弹性模型 (Career Path Elasticity Model)
 
 ### 4.1 模型逻辑
 该模型作为"安全网"，评估最优课程方案培养出的学生在面临目标职业消失（被AI完全替代）时，转型到相近职业的容易程度。
@@ -116,7 +111,7 @@ $$ k^* = \arg\max_{k} |v_{origin}^{(k)} - v_{target}^{(k)}| $$
 
 ---
 
-## 5. 参数确定：层次分析法 (AHP)
+## 4. 参数确定：层次分析法 (AHP)
 
 为了科学设定最关键的参数 $\lambda$ (行政调整系数)，我们构建了 AHP 评价体系。
 
@@ -142,7 +137,7 @@ $$ A_{C2} = \begin{bmatrix} 1 & 5 & 9 \\ 1/5 & 1 & 3 \\ 1/9 & 1/3 & 1 \end{bmatr
 
 ---
 
-## 6. 模型整体工作流 (System Workflow)
+## 5. 模型整体工作流 (System Workflow)
 
 ```mermaid
 graph TD
@@ -172,7 +167,7 @@ graph TD
     end
 ```
 
-## 8. 灵敏度分析 (Sensitivity Analysis)
+## 6. 灵敏度分析 (Sensitivity Analysis)
 
 为了验证模型的稳健性 (Robustness) 并探索极端情况下的系统行为，我们对关键参数进行了单因素灵敏度分析。
 

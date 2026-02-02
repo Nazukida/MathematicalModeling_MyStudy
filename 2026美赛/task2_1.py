@@ -489,7 +489,7 @@ class EducationDecisionParams:
         self.gamma = 0.0  # 惩罚权重（降低惩罚）
         self.alpha = 0.0  # 能源惩罚系数
         self.beta = 0.0   # 风险惩罚系数
-        self.sa_iterations = 300  # SA迭代次数
+        self.sa_iterations = 350  # SA迭代次数
         self.sa_temp = 100  # 初始温度
         self.sa_cooling = 0.95  # 冷却率
 
@@ -546,23 +546,17 @@ class EducationDecisionParams:
             base_w = {'x_base': 0.3, 'x_AI': 0.3, 'x_proj': 0.3, 'x_ethics': 0.1}
         
         # 3. 收益递减 (Diminishing Returns)
-        # 使用平方根函数模拟收益递减：Utility = weight * sqrt(credits) * ScalingFactor
+        # 使用平方根函数模拟收益递减：Utility = weight * sqrt(credits)
         # 这确保了不会出现单一课程独占所有学分的情况 (Corner Solution)
         
         utility = 0
-        scaling_factor = 100 # 优化：扩大缩放因子
         
         for k, weight in base_w.items():
             credit = x.get(k, 0)
             # 基础效用：权重 * 边际效用递减的学分 (使用sqrt)
-            term_utility = weight * np.sqrt(credit) * scaling_factor
+            term_utility = weight * np.sqrt(credit)
             utility += term_utility
             
-        # 4. Synergy Bonus (强强联合奖励)
-        # 如果 AI 和 Base 都足够高，给予额外 Bonus
-        if x.get('x_AI', 0) > 30 and x.get('x_base', 0) > 30:
-             utility += utility * 0.05
-
         return utility
 
     def _set_school_params(self):
@@ -1305,10 +1299,11 @@ class EducationDecisionVisualization:
     def plot_pareto_frontier(self, figsize=(12, 8)):
         """
         绘制帕累托前沿图 - 专业美化版：AI收益 vs 基础收益
+        加入前沿拟合线条和标识，提升对比度
         """
         fig, ax = plt.subplots(figsize=figsize)
         fig.suptitle(f'{self.model.params.school_name} - Resource Competition Analysis',
-                    fontsize=18, fontweight='bold')
+                    fontsize=18, fontweight='bold', color=PlotStyleConfig.COLORS['dark'])
 
         # 获取权重 (本地估算)
         p = self.model.params
@@ -1322,8 +1317,7 @@ class EducationDecisionVisualization:
             base_w = {'x_base': 0.3, 'x_AI': 0.3, 'x_security': 0.1, 'x_proj': 0.2, 'x_ethics': 0.1}
 
         # 生成样本点：不同AI学分分配下的收益权衡
-        ai_utilities = []
-        base_utilities = []
+        points = []
         
         # 固定ethics, proj为当前值，改变AI和base
         current_ethics = p.current_curriculum.get('x_ethics', 0)
@@ -1334,29 +1328,82 @@ class EducationDecisionVisualization:
         for ai_credits in np.linspace(5, 80, 50):  # AI从5到80
             base_credits = 120 - ai_credits - fixed_credits
             if base_credits >= 10:  # 满足宽松约束
-                ai_utility = base_w.get('x_AI', 0) * np.sqrt(ai_credits) * 10
-                base_utility = base_w.get('x_base', 0) * np.sqrt(base_credits) * 10
-                ai_utilities.append(ai_utility)
-                base_utilities.append(base_utility)
+                ai_utility = base_w.get('x_AI', 0) * np.sqrt(ai_credits)
+                base_utility = base_w.get('x_base', 0) * np.sqrt(base_credits)
+                points.append((ai_utility, base_utility))
 
-        ax.scatter(ai_utilities, base_utilities, alpha=0.6, color=PlotStyleConfig.COLORS['secondary'])
+        # 转换为数组
+        points = np.array(points)
+        ai_utilities = points[:, 0]
+        base_utilities = points[:, 1]
+
+        # 绘制所有点 - 使用渐变色
+        colors = plt.cm.viridis(np.linspace(0, 1, len(ai_utilities)))
+        scatter = ax.scatter(ai_utilities, base_utilities, c=ai_utilities, cmap='viridis', alpha=0.7, s=50, edgecolors='k', linewidth=0.5)
+        
+        # 计算帕累托前沿 (非支配解)
+        def is_dominated(p1, p2):
+            return p1[0] <= p2[0] and p1[1] <= p2[1] and (p1[0] < p2[0] or p1[1] < p2[1])
+        
+        pareto_front = []
+        for i, p1 in enumerate(points):
+            dominated = False
+            for j, p2 in enumerate(points):
+                if i != j and is_dominated(p1, p2):
+                    dominated = True
+                    break
+            if not dominated:
+                pareto_front.append(p1)
+        
+        pareto_front = np.array(sorted(pareto_front, key=lambda x: x[0]))
+        
+        # 绘制帕累托前沿 - 用线连接
+        if len(pareto_front) > 1:
+            ax.plot(pareto_front[:, 0], pareto_front[:, 1], 'r-', linewidth=3, alpha=0.8, label='Pareto Front')
+            ax.fill_between(pareto_front[:, 0], pareto_front[:, 1], alpha=0.1, color='red', label='Feasible Region')
         
         # 标记最优点
         opt_ai = self.results['curriculum_optimization']['optimal_curriculum'].get('x_AI', 0)
         opt_base = self.results['curriculum_optimization']['optimal_curriculum'].get('x_base', 0)
-        opt_ai_utility = base_w.get('x_AI', 0) * np.sqrt(opt_ai) * 10
-        opt_base_utility = base_w.get('x_base', 0) * np.sqrt(opt_base) * 10
+        opt_ai_utility = base_w.get('x_AI', 0) * np.sqrt(opt_ai)
+        opt_base_utility = base_w.get('x_base', 0) * np.sqrt(opt_base)
         
-        ax.scatter(opt_ai_utility, opt_base_utility, color='red', s=100, marker='*', label='Optimal Solution')
-        ax.annotate('Optimal Point', (opt_ai_utility, opt_base_utility), xytext=(10, 10), textcoords='offset points',
-                   bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.5))
+        ax.scatter(opt_ai_utility, opt_base_utility, color=PlotStyleConfig.COLORS['gold'], s=150, marker='*', 
+                  edgecolors='black', linewidth=2, label='Optimal Solution', zorder=10)
+        ax.annotate(f'Optimal\n({opt_ai:.0f} AI, {opt_base:.0f} Base)', 
+                   (opt_ai_utility, opt_base_utility), 
+                   xytext=(20, 20), textcoords='offset points',
+                   bbox=dict(boxstyle='round,pad=0.5', facecolor=PlotStyleConfig.COLORS['gold'], alpha=0.8),
+                   fontsize=10, ha='center')
 
-        ax.set_xlabel('AI Skill Utility (Benefit)')
-        ax.set_ylabel('Base Skill Utility (Benefit)')
-        ax.set_title('Resource Competition: AI vs Base Skills Trade-off', fontweight='bold')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+        # 添加拟合曲线 (多项式拟合前沿)
+        if len(pareto_front) > 3:
+            try:
+                coeffs = np.polyfit(pareto_front[:, 0], pareto_front[:, 1], 2)  # 二次多项式
+                x_fit = np.linspace(pareto_front[0, 0], pareto_front[-1, 0], 100)
+                y_fit = np.polyval(coeffs, x_fit)
+                ax.plot(x_fit, y_fit, 'b--', linewidth=2, alpha=0.7, label='Frontier Fit (Quadratic)')
+            except:
+                pass  # 拟合失败则跳过
 
+        # 美化标签和样式
+        ax.set_xlabel('AI Skill Utility (Benefit)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Base Skill Utility (Benefit)', fontsize=14, fontweight='bold')
+        ax.set_title('Resource Competition: AI vs Base Skills Trade-off\n(Pareto Frontier Analysis)', 
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        # 添加颜色条
+        cbar = plt.colorbar(scatter, ax=ax, shrink=0.8)
+        cbar.set_label('AI Utility Intensity', fontsize=12)
+        
+        ax.legend(loc='upper right', fontsize=12, framealpha=0.9)
+        ax.grid(True, alpha=0.3, linestyle='--')
+        
+        # 设置背景和边框
+        ax.set_facecolor(PlotStyleConfig.COLORS['background'])
+        for spine in ax.spines.values():
+            spine.set_edgecolor(PlotStyleConfig.COLORS['grid'])
+        
         plt.tight_layout()
         paths = self.saver.save(fig, 'resource_competition_analysis')
         print(f"  💾 Resource competition plot saved: {paths[0]}")
